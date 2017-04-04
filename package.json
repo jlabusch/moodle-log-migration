@@ -4,6 +4,6 @@
   "author": "Jacques Labuschagne",
   "license": "GPLv3",
   "dependencies": {
-    "mysql": "*"
+    "mysql": "2.13"
  }
 }
