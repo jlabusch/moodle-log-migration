@@ -1,0 +1,9 @@
+[mysql]
+
+max_allowed_packet    = 107374182
+default_character_set = utf8
+
+[mysqld]
+
+max_allowed_packet    = 107374182
+

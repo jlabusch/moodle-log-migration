@@ -1,0 +1,30 @@
+version: "2"
+
+services:
+
+    db:
+        image: mysql:5.7
+        expose:
+            - "3306"
+        volumes:
+            - ./db:/docker-entrypoint-initdb.d:ro
+            - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
+            - ./data:/var/lib/mysql
+        environment:
+            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+    
+    app:
+        image: jlabusch/moodle-log-migrator
+        build: .
+        links:
+            - db
+        volumes:
+            - ./lib:/opt/lib:ro
+            - ./data:/opt/data
+        environment:
+            # RESTRICT_MODULES: "forum"
+            # RESTRICT_ACTIONS: "delete discussion"
+            LOSSY_AUDIT: "yes"
+            # DISABLE_AUDIT: "yes"
+
+

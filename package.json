@@ -1,0 +1,9 @@
+{
+  "name": "moodle-log-migration",
+  "version": "0.1.0",
+  "author": "Jacques Labuschagne",
+  "license": "GPLv3",
+  "dependencies": {
+    "mysql": "*"
+ }
+}
