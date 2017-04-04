@@ -25,3 +25,10 @@ Proof of concept for migrating MDL_LOG as part of a site migration. Works out co
     app_1  |   "mdl_log.forum.add post.multiple_matches_fixed": 8,
     app_1  |   "mdl_log.forum.delete discussion.count": 204315,
     ...
+
+Environment variables supported:
+
+ - DISABLE_AUDIT: if set, don't create ./data/audit_logs.tsv.
+ - LOSSY_AUDIT: only spot-check; write log2(n) entries to the audit log.
+ - RESTRICT_MODULES: A comma-separated whitelist of modules to migrate. (Unset means no restriction, migrate everything.)
+ - RESTRICT_ACTIONS: As above, but actions instead of modules.
