@@ -6,7 +6,7 @@ Proof of concept for migrating MDL_LOG as part of a site migration. Works out co
 
  - Dump the databases from the old and new sites. (MySQL is assumed; update docker-compose if using pg etc.)
  - Put old.sql and new.sql into ./db/. (The names of the SQL files don't matter.)
- - Append DB creation statements at the top of each file, e.g.
+ - Insert DB creation statements at the top of each file, e.g.
 
 &nbsp;
 
