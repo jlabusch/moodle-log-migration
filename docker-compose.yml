@@ -2,28 +2,49 @@ version: "2"
 
 services:
 
-    db:
+    db_old:
         image: mysql:5.7
         expose:
             - "3306"
         volumes:
-            - ./db:/docker-entrypoint-initdb.d:ro
+            - ./db/old/init:/docker-entrypoint-initdb.d:ro
+            - ./db/old/data:/var/lib/mysql
             - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
-            - ./data:/var/lib/mysql
         environment:
-            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+            MYSQL_ROOT_PASSWORD: "abc123"
+
+    db_old_admin:
+        image: phpmyadmin/phpmyadmin:latest
+        links:
+            - db_old:db
+        ports:
+            - "8081:80"
+        environment:
+            MYSQL_ROOT_PASSWORD: "abc123"
+
+    db_new:
+        image: postgres:9.4
+        expose:
+            - "5432"
+        volumes:
+            - ./db/new/init:/docker-entrypoint-initdb.d:ro
+            - ./db/new/data:/var/lib/postgres/data/pgdata
+        environment:
+            POSTGRES_PASSWORD: "abc123"
+            PGDATA: "/var/lib/postgres/data/pgdata"
     
     app:
         image: jlabusch/moodle-log-migrator
         build: .
         links:
-            - db
+            - db_old
+            - db_new
         volumes:
             - ./lib:/opt/lib:ro
-            - ./data:/opt/data
+            - ./db:/opt/data
         environment:
-            # RESTRICT_MODULES: "forum"
-            # RESTRICT_ACTIONS: "delete discussion"
+            # RESTRICT_MODULES: "user"
+            # RESTRICT_ACTIONS: "login"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
 

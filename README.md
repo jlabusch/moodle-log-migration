@@ -2,20 +2,24 @@
 
 Proof of concept for migrating MDL_LOG as part of a site migration. Works out corresponding IDs for users, courses, etc. in the new site. Useful in cases where you're migrating using course backup+restore from older versions of Moodle (e.g. 2.8) which don't include logs in backups.
 
+Built for the case where the old DB is MySQL and the new DB is Postgres, but can be made to work with any combination of the two.
+
+
 ## Quick-start guide
 
- - Dump the databases from the old and new sites. (MySQL is assumed; update docker-compose if using pg etc.)
- - Put old.sql and new.sql into ./db/. (The names of the SQL files don't matter.)
- - Insert DB creation statements at the top of each file, e.g.
+ - run `make prep` to create the directory structure under `./db/`.
+ - Dump the databases from the old and new sites. (Update `docker-compose.yml` and `dbs.js` to match your choice of MySQL or Postgres.)
+ - Put old.sql and new.sql into `./db/old/init/` and `./db/new/init/`. (The names of the SQL files don't matter.)
+ - Insert DB creation statements at the top of each file if needed, e.g.
 
 &nbsp;
 
     create database moodle_old;
     use moodle_old;
 
- - Name the old database `moodle_old` and the new one `moodle_new`
+ - Make sure the database names and user details line up with what's specified in `./lib/dbs.js` (see module.exports at the bottom of the file.)
  - Start the migration (`docker-compose up`)
- - You know the process has finished when you see statistics about the number of items migrated, e.g.
+ - When each module finishes it'll print statistics like:
 
 &nbsp;
 
@@ -32,3 +36,8 @@ Environment variables supported:
  - LOSSY_AUDIT: only spot-check; write log2(n) entries to the audit log.
  - RESTRICT_MODULES: A comma-separated whitelist of modules to migrate. (Unset means no restriction, migrate everything.)
  - RESTRICT_ACTIONS: As above, but actions instead of modules.
+
+Debugging:
+
+ - PHPMyAdmin will run on localhost:8081 in case you need to look at the old database schema
+
