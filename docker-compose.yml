@@ -11,8 +11,15 @@ services:
             - ./mysql.cnf:/etc/mysql/conf.d/mysql.cnf:ro
             - ./data:/var/lib/mysql
         environment:
-            MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-    
+            MYSQL_ROOT_PASSWORD: "abc123"
+    admin:
+        image: phpmyadmin/phpmyadmin:latest
+        links:
+           - db:db
+        ports:
+           - "8081:80"
+        environment:
+            MYSQL_ROOT_PASSWORD: "abc123"
     app:
         image: jlabusch/moodle-log-migrator
         build: .
@@ -22,9 +29,8 @@ services:
             - ./lib:/opt/lib:ro
             - ./data:/opt/data
         environment:
-            # RESTRICT_MODULES: "forum"
-            # RESTRICT_ACTIONS: "delete discussion"
+            RESTRICT_MODULES: "resource"
+            RESTRICT_ACTIONS: "update"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
-
-
+            
