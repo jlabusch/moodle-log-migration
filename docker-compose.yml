@@ -22,6 +22,16 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: "abc123"
 
+    db_new_admin:
+        image: thajeztah/pgadmin4:latest
+        links:
+            - db_new:db
+        ports:
+            - "5051:5051"
+        environment:
+            POSTGRES_PASSWORD: "abc123"
+            PG_ADMIN_PORT: "5051"
+
     db_new:
         image: postgres:9.4
         expose:
