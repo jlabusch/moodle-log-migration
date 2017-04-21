@@ -57,5 +57,4 @@ services:
             # RESTRICT_ACTIONS: "login"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
-
-
+            
