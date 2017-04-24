@@ -1,3 +1,5 @@
+/*eslint no-console: ["warn", { allow: ["log"] }] */
+
 var mysql = require('mysql'),
     pg = require('pg');
 
@@ -21,7 +23,7 @@ function Postgres(spec){
     this.handle = new pg.Pool(spec);
     this.spec = spec;
 
-    this.handle.on('error', (err, client) => {
+    this.handle.on('error', (err) => {
         console.log(err.message);
     });
 }
@@ -36,7 +38,7 @@ Postgres.prototype.test_connection = function(next){
     var self = this;
     this.handle.query(
         'select 1 + 1 as solution',
-        function(err, res){
+        function(err){
             if (err){
                 console.log(JSON.stringify(err));
                 setTimeout(() => { self.test_connection(next) }, 10000);
@@ -62,7 +64,7 @@ Mysql.prototype.test_connection = function(next){
     conn.connect();
     conn.query(
         'select 1 + 1 as solution',
-        function(err, res, fields){
+        function(err){
             if (err){
                 console.log(JSON.stringify(err));
                 setTimeout(() => { self.test_connection(next) }, 10000);
