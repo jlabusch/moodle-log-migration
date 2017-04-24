@@ -16,7 +16,9 @@ function mysql_to_postgres(sql) {
                 // es_es -> es multilang change
                 .replace(/"es_es"/, '"es"')
                 // escaping single quotes works differently
-                .replace(/\\'/g, "''");
+                .replace(/\\'/g, "''")
+                // replacing \t with a space
+                .replace(/\\t/g, " ");
 }
 
 function Postgres(spec){
