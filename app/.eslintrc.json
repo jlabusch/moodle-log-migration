@@ -19,9 +19,6 @@
             "unix"
         ],
         "quotes": "off",
-        "semi": [
-            "warn",
-            "always"
-        ]
+        "semi": "off"
     }
 }
