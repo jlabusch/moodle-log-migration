@@ -164,7 +164,7 @@ function migrate_log_rows(t, m, a, row, rest, done){
     inc_stat(key + '.count');
     let tool = migration_functions[t][m][a],
         next = () => { migrate_log_rows(t, m, a, rest.shift(), rest, done) },
-        verbose = tool.verbose;
+        verbose = tool.verbose,
         run_match = (r) => {
             let sm = tool.sql_match(r);
             if (!sm){
