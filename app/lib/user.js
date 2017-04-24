@@ -1,7 +1,5 @@
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
-    bogus_email = require('./common.js').bogus_email,
-    fix_by_shadow_index = require('./common.js').fix_by_shadow_index,
     fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
@@ -17,7 +15,7 @@ function filter_users(obj){
 function maybe_print(label, obj){
     let arr = filter_users(obj);
     if (arr.length){
-        console.log(label + ': ' + JSON.stringify(arr, null, 2));
+    //     console.log(label + ': ' + JSON.stringify(arr, null, 2));
     }
 }
 
@@ -127,7 +125,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username
+                return lr.username === nm.username;
             });
         },
 
@@ -249,7 +247,7 @@ var library = {
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
                 return lr.u1_username === nm.u1_username &&
-                       lr.u2_username === nm.u2_username
+                       lr.u2_username === nm.u2_username;
             });
         },
 

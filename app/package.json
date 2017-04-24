@@ -7,6 +7,9 @@
     "eslint": "~3.19",
     "eslint-plugin-import": "*",
     "eslint-plugin-node": "*",
+    "eslint-plugin-standard": "*",
+    "eslint-plugin-promise": "*",
+    "eslint-config-standard": "*",
     "mysql": "~2.13",
     "pg": "~6.1"
  }

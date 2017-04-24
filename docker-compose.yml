@@ -45,12 +45,14 @@ services:
     
     app:
         image: jlabusch/moodle-log-migrator
-        build: .
+        build: app
         links:
             - db_old
             - db_new
         volumes:
-            - ./lib:/opt/lib:ro
+            - ./app/lib:/opt/lib:ro
+            - ./app/migration.js:/opt/migration.js:ro
+            - ./app/.eslintrc.json:/opt/.eslintrc.json
             - ./db:/opt/data
         environment:
             # RESTRICT_MODULES: "user"

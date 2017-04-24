@@ -1,3 +1,5 @@
+/*eslint no-console: ["warn", { allow: ["log"] }] */
+
 var audit = require('./audit.js'),
     dbs = require('./dbs.js');
 
