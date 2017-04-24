@@ -4,7 +4,7 @@ WORKDIR /opt
 
 RUN mkdir -p /opt/data
 
-COPY package.json migration.js lib ./
+COPY .eslintrc.yml package.json migration.js lib ./
 
 RUN npm install
 

@@ -4,6 +4,9 @@
   "author": "Jacques Labuschagne",
   "license": "GPLv3",
   "dependencies": {
+    "eslint": "~3.19",
+    "eslint-plugin-import": "*",
+    "eslint-plugin-node": "*",
     "mysql": "~2.13",
     "pg": "~6.1"
  }
