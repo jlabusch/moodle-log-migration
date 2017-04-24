@@ -43,7 +43,7 @@ services:
             - ./db:/opt/data
         environment:
             RESTRICT_MODULES: "resource"
-            RESTRICT_ACTIONS: "update"
+            RESTRICT_ACTIONS: "view all"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
             
