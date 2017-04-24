@@ -1,4 +1,5 @@
 var restrict_clause = require('./sql_restrictions.js')(),
+    fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
 var library = {
