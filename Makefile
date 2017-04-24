@@ -6,7 +6,7 @@ prep:
 	mkdir -p db/new/data db/new/init db/old/data db/old/init
 
 lint:
-	$(DOCKER) exec -it $$($(DOCKER) ps | grep moodle-log-migrator | awk '{print $$1}') ./node_modules/.bin/eslint ./lib/*.js
+	make -C app lint
 
 clean:
 	sudo rm -fr db/old/data/*
