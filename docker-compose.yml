@@ -21,6 +21,18 @@ services:
             - "8081:80"
         environment:
             MYSQL_ROOT_PASSWORD: "abc123"
+
+    db_new_admin:
+        image: thajeztah/pgadmin4:latest
+        links:
+            - db_new:db
+        ports:
+            - "5051:5051"
+        environment:
+            POSTGRES_PASSWORD: "abc123"
+            PG_ADMIN_PORT: "5051"
+
+
     db_new:
         image: postgres:9.4
         expose:
@@ -42,8 +54,8 @@ services:
             - ./lib:/opt/lib:ro
             - ./db:/opt/data
         environment:
-            RESTRICT_MODULES: "resource"
-            RESTRICT_ACTIONS: "view all"
+            RESTRICT_MODULES: "page"
+            RESTRICT_ACTIONS: "view"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
             
