@@ -21,6 +21,17 @@ function mysql_to_postgres(sql) {
                 .replace(/\\t/g, " ");
 }
 
+function handle_connection_attempt(caller, next){
+    return function(err){
+        if (err){
+            console.log(JSON.stringify(err));
+            setTimeout(() => { caller.test_connection(next) }, 10000);
+            return;
+        }
+        next();
+    }
+}
+
 function Postgres(spec){
     this.handle = new pg.Pool(spec);
     this.spec = spec;
@@ -40,14 +51,7 @@ Postgres.prototype.test_connection = function(next){
     var self = this;
     this.handle.query(
         'select 1 + 1 as solution',
-        function(err){
-            if (err){
-                console.log(JSON.stringify(err));
-                setTimeout(() => { self.test_connection(next) }, 10000);
-                return;
-            }
-            next();
-        }
+        handle_connection_attempt(self, next)
     );
 }
 
@@ -66,15 +70,7 @@ Mysql.prototype.test_connection = function(next){
     conn.connect();
     conn.query(
         'select 1 + 1 as solution',
-        function(err){
-            if (err){
-                console.log(JSON.stringify(err));
-                setTimeout(() => { self.test_connection(next) }, 10000);
-                return;
-            }
-            conn.end();
-            next();
-        }
+        handle_connection_attempt(self, next)
     );
 }
 
