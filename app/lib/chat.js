@@ -60,7 +60,7 @@ var library = {
                 "WHERE log.module = 'chat' AND log.action = 'add' AND " + restrict_clause,
         
         sql_match:  (row) => {
-        return mysql.format(
+            return mysql.format(
                 'SELECT c.id AS course, ' +
                 '       ch.id AS chat_id, ch.name AS chat_name, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
@@ -78,7 +78,7 @@ var library = {
                 row["chat_name"]
             ]
         )
-    },
+        },
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
@@ -141,17 +141,17 @@ var library = {
             "WHERE log.module = 'page' AND log.action = 'view all' AND " + restrict_clause,
     
         sql_match:  (row) => {
-        return mysql.format(
+            return mysql.format(
                 'SELECT c.id AS course, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
                 'WHERE c.shortname = ?',
-                [
-                    row["username"],
-                    row["email"],
-                    row["course_shortname"]
-                ]
+            [
+                row["username"],
+                row["email"],
+                row["course_shortname"]
+            ]
             )
         },
 

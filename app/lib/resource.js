@@ -6,7 +6,7 @@ var restrict_clause = require('./sql_restrictions.js')(),
 var library = {
     "add": {	
         alias: () => { make_alias(library, 'add', 'update') }
-},
+    },
     "update": {
 		/*
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
@@ -64,7 +64,7 @@ var library = {
                 "WHERE log.module = 'resource' AND log.action = 'update' AND " + restrict_clause,
         
         sql_match:  (row) => {
-        return mysql.format(
+            return mysql.format(
                 'SELECT c.id AS course, ' +
                 '       r.id AS resource_id, r.name AS resource_name, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
@@ -81,7 +81,7 @@ var library = {
                 row["course_shortname"]
             ]
         )
-    },
+        },
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
@@ -113,11 +113,11 @@ var library = {
                         ')';
             next && next(null, output);
         }
-},
-	"view": {
-        alias: () => { make_alias(library, 'view', 'update') }
-},
-	"view all": {
+    },
+    "view": {
+    alias: () => { make_alias(library, 'view', 'update') }
+    },
+    "view all": {
         /*     
         | userid | course |  cmid | url                             | info |
         +--------+--------+-------+---------------------------------+------+
@@ -138,7 +138,7 @@ var library = {
             "WHERE log.module = 'resource' AND log.action = 'view all' AND " + restrict_clause,
         
         sql_match:  (row) => {
-        return mysql.format(
+            return mysql.format(
                     'SELECT c.id AS course, ' +
                     '       u.id AS userid, u.username, u.email ' +
                     'FROM mdl_course c ' +

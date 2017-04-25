@@ -49,65 +49,64 @@ var library = {
         |    1   | <span lang="en" class="multilang">Learning Info</span><span lang="es_es" class="multilang">Learning info</span><span lang="fr" class="multilang">Info d'apprentissage</span>  | 
         +--------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
         */	
-    sql_old:    'SELECT log.*, p.id AS page_id, ' +
-        '       u.username, u.email, ' +
-        '       cm.instance AS module_instance, ' +
-        '       p.name AS page_name, ' +
-        '       c.shortname AS course_shortname ' +
-        'FROM mdl_log log ' +
-        'JOIN mdl_user u on u.id = log.userid ' +
-        'JOIN mdl_course c ON c.id = log.course ' +
-        'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
-        'LEFT JOIN mdl_page p on p.id = log.info ' +
-        "WHERE log.module = 'page' AND log.action = 'add' AND " + restrict_clause,
-          
-    sql_match:  (row) => {
-    return mysql.format(
-            'SELECT c.id AS course, ' +
-            '       p.id AS page_id, ' + 
-            '       u.id AS userid, u.username, ' +
-            '       cm.id AS cmid ' +
-            'FROM mdl_course c ' +
-            'LEFT JOIN mdl_page p ON p.course = c.id ' +
-            'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-            'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
-                "   (SELECT id from mdl_modules where name = 'page') " +
-            'WHERE c.shortname = ? AND p.name = ?',
-            [
-                row["username"],
-                row["email"],
-                row["course_shortname"],
-                row["page_name"]
-            ]
+        sql_old:    'SELECT log.*, p.id AS page_id, ' +
+            '       u.username, u.email, ' +
+            '       cm.instance AS module_instance, ' +
+            '       p.name AS page_name, ' +
+            '       c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u on u.id = log.userid ' +
+            'JOIN mdl_course c ON c.id = log.course ' +
+            'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
+            'LEFT JOIN mdl_page p on p.id = log.info ' +
+            "WHERE log.module = 'page' AND log.action = 'add' AND " + restrict_clause,
+              
+        sql_match:  (row) => {
+        return mysql.format(
+                'SELECT c.id AS course, ' +
+                '       p.id AS page_id, ' + 
+                '       u.id AS userid, u.username, ' +
+                '       cm.id AS cmid ' +
+                'FROM mdl_course c ' +
+                'LEFT JOIN mdl_page p ON p.course = c.id ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
+                    "   (SELECT id from mdl_modules where name = 'page') " +
+                'WHERE c.shortname = ? AND p.name = ?',
+        [
+            row["username"],
+            row["email"],
+            row["course_shortname"],
+            row["page_name"]
+        ]
         )
+        },
 
-    },
+        fixer: function(log_row, old_matches, new_matches){
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.username === nm.username || lr.email === nm.email);
+            });
+        },
 
-    fixer: function(log_row, old_matches, new_matches){
-        return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-            return (lr.username === nm.username || lr.email === nm.email);
-        });
-    },
-
-    fn: function(old_row, match_row, next){
-        var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cmid);
-        var output ='INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                        [
-                            old_row.time,
-                            match_row.userid,
-                            "'" + old_row.ip + "'",
-                            match_row.course,
-                            "'" + old_row.module + "'",
-                            match_row.cmid,
-                            "'" + old_row.action + "'",
-                            "'" + updated_url + "'",
-                            "'" + match_row.page_id + "'"
-                        ].join(',') +
-                    ')';
-        next && next(null, output);
-    }
+        fn: function(old_row, match_row, next){
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cmid);
+            var output ='INSERT INTO mdl_log ' +
+                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                        '(' +
+                            [
+                                old_row.time,
+                                match_row.userid,
+                                "'" + old_row.ip + "'",
+                                match_row.course,
+                                "'" + old_row.module + "'",
+                                match_row.cmid,
+                                "'" + old_row.action + "'",
+                                "'" + updated_url + "'",
+                                "'" + match_row.page_id + "'"
+                            ].join(',') +
+                        ')';
+            next && next(null, output);
+        }
 },
     "update": {
 		/*
@@ -154,12 +153,12 @@ var library = {
         |    18  | 1. The importance of persons to the mission of MSF   | 
         +--------+------------------------------------------------------+
         */
-        alias: () => { make_alias(library, 'update', 'add') }
+    alias: () => { make_alias(library, 'update', 'add') }
 },
 	"view": {
-        alias: () => { make_alias(library, 'view', 'add') }
+    alias: () => { make_alias(library, 'view', 'add') }
 },
-	"view all": {
+    "view all": {
         /*      
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
 
@@ -173,56 +172,56 @@ var library = {
                       mdl_course_modules.id                   |       
                                                     mdl_course.id               
         */
-    sql_old:    'SELECT log.*, ' +
-        '       u.username, u.email, ' +
-        '       c.shortname AS course_shortname ' +
-        'FROM mdl_log log ' +
-        'JOIN mdl_user u on u.id = log.userid ' +
-        'JOIN mdl_course c ON c.id = log.course ' +
-        "WHERE log.module = 'page' AND log.action = 'view all' AND " + restrict_clause,
-    
-    sql_match:  (row) => {
-    return mysql.format(
+        sql_old:    'SELECT log.*, ' +
+            '       u.username, u.email, ' +
+            '       c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u on u.id = log.userid ' +
+            'JOIN mdl_course c ON c.id = log.course ' +
+            "WHERE log.module = 'page' AND log.action = 'view all' AND " + restrict_clause,
+        
+        sql_match:  (row) => {
+        return mysql.format(
                 'SELECT c.id AS course, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
                 'WHERE c.shortname = ?',
-                [
-                    row["username"],
-                    row["email"],
-                    row["course_shortname"]
-                ]
-            )
-    },
+        [
+                row["username"],
+                row["email"],
+                row["course_shortname"]
+        ]
+        )
+        },
 
-    fixer: function(log_row, old_matches, new_matches){
-        return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-            return (lr.username === nm.username || lr.email === nm.email);
-        });
-    },
+        fixer: function(log_row, old_matches, new_matches){
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.username === nm.username || lr.email === nm.email);
+            });
+        },
 
-    fn: function(old_row, match_row, next){
-        var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.course);
+        fn: function(old_row, match_row, next){
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.course);
 
-        var output ='INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                        [
-                            old_row.time,
-                            match_row.userid,
-                            "'" + old_row.ip + "'",
-                            match_row.course,
-                            "'" + old_row.module + "'",
-                            old_row.cmid,
-                            "'" + old_row.action + "'",
-                            "'" + updated_url + "'",
-                            "'" + old_row.info + "'"
-                        ].join(',') +
-                    ')';
-        next && next(null, output);
-    }
-}
+            var output ='INSERT INTO mdl_log ' +
+                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                        '(' +
+                            [
+                                old_row.time,
+                                match_row.userid,
+                                "'" + old_row.ip + "'",
+                                match_row.course,
+                                "'" + old_row.module + "'",
+                                old_row.cmid,
+                                "'" + old_row.action + "'",
+                                "'" + updated_url + "'",
+                                "'" + old_row.info + "'"
+                            ].join(',') +
+                        ')';
+            next && next(null, output);
+        }
+}      
 };
 
 module.exports = library;
