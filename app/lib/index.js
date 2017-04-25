@@ -117,7 +117,7 @@ var migration_functions = {
         login:  require('./login.js'),
         course: require('./course.js'),
         user:   require('./user.js'),
-        upload: undefined,
+        upload: require('./upload.js'),
         admin: require('./admin.js'),
         blog: require('./blog.js'),
         library: require('./library.js'),
