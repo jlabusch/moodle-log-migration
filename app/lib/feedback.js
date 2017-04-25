@@ -20,7 +20,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       f.name AS feedback_name ' +
                     'FROM mdl_log log ' +
@@ -33,17 +33,18 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       f.id AS feedbackid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_feedback f ON f.course = c.id AND BINARY f.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = f.id AND cm.course = c.id and cm.module = ' +
                 "   (SELECT id from mdl_modules where name = 'feedback') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["feedback_name"],
                     row["course_shortname"]
                 ]
@@ -52,7 +53,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -108,7 +109,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
@@ -118,12 +119,13 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname ' +
+                '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["course_shortname"]
                 ]
             );
@@ -131,7 +133,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 

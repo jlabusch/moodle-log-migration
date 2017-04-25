@@ -32,11 +32,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, u.email, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       l.id AS lessonid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_lesson l ON l.course = c.id AND l.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = l.id AND cm.course = c.id and cm.module = ' +
                 "   (SELECT id from mdl_modules where name = 'lesson') " +
@@ -52,7 +52,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.username === nm.uname || lr.email === nm.email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -113,9 +113,9 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, u.email ' +
+                '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
@@ -127,7 +127,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.username === nm.uname || lr.email === nm.email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -179,11 +179,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, u.email, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       l.id AS lessonid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_lesson l ON l.course = c.id AND l.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = l.id AND cm.course = c.id and cm.module = ' +
                 "   (SELECT id from mdl_modules where name = 'lesson') " +
@@ -199,7 +199,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.username === nm.uname || lr.email === nm.email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
