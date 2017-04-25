@@ -4,7 +4,7 @@ var restrict_clause = require('./sql_restrictions.js')(),
     mysql = require('mysql');
 
 var library = {
-	"add": {
+    "add": {
         /*
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
 
@@ -62,24 +62,24 @@ var library = {
         "WHERE log.module = 'page' AND log.action = 'add' AND " + restrict_clause,
           
     sql_match:  (row) => {
-        return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       p.id AS page_id, ' + 
-                '       u.id AS userid, u.username, ' +
-                '       cm.id AS cmid ' +
-                'FROM mdl_course c ' +
-                'LEFT JOIN mdl_page p ON p.course = c.id ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
-                    "   (SELECT id from mdl_modules where name = 'page') " +
-                'WHERE c.shortname = ? AND p.name = ?',
-                [
-                    row["username"],
-                    row["email"],
-                    row["course_shortname"],
-                    row["page_name"]
-                ]
-            )
+    return mysql.format(
+            'SELECT c.id AS course, ' +
+            '       p.id AS page_id, ' + 
+            '       u.id AS userid, u.username, ' +
+            '       cm.id AS cmid ' +
+            'FROM mdl_course c ' +
+            'LEFT JOIN mdl_page p ON p.course = c.id ' +
+            'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+            'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'page') " +
+            'WHERE c.shortname = ? AND p.name = ?',
+            [
+                row["username"],
+                row["email"],
+                row["course_shortname"],
+                row["page_name"]
+            ]
+        )
 
     },
 
@@ -108,8 +108,8 @@ var library = {
                     ')';
         next && next(null, output);
     }
-	},
-	"update": {
+},
+    "update": {
 		/*
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
 
@@ -154,11 +154,11 @@ var library = {
         |    18  | 1. The importance of persons to the mission of MSF   | 
         +--------+------------------------------------------------------+
         */
-    alias: () => { make_alias(library, 'update', 'add') }
-	},
+        alias: () => { make_alias(library, 'update', 'add') }
+},
 	"view": {
-    alias: () => { make_alias(library, 'view', 'add') }
-    },
+        alias: () => { make_alias(library, 'view', 'add') }
+},
 	"view all": {
         /*      
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
@@ -182,18 +182,18 @@ var library = {
         "WHERE log.module = 'page' AND log.action = 'view all' AND " + restrict_clause,
     
     sql_match:  (row) => {
-        return mysql.format(
-                    'SELECT c.id AS course, ' +
-                    '       u.id AS userid, u.username, u.email ' +
-                    'FROM mdl_course c ' +
-                    'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-                    'WHERE c.shortname = ?',
-                    [
-                        row["username"],
-                        row["email"],
-                        row["course_shortname"]
-                    ]
-                )
+    return mysql.format(
+                'SELECT c.id AS course, ' +
+                '       u.id AS userid, u.username, u.email ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'WHERE c.shortname = ?',
+                [
+                    row["username"],
+                    row["email"],
+                    row["course_shortname"]
+                ]
+            )
     },
 
     fixer: function(log_row, old_matches, new_matches){
