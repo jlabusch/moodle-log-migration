@@ -1,3 +1,5 @@
+/*eslint no-console: ["warn", { allow: ["log"] }] */
+
 var audit = require('./audit.js'),
     dbs = require('./dbs.js');
 
@@ -117,8 +119,8 @@ var migration_functions = {
         user:   require('./user.js'),
         upload: undefined,
         admin: require('./admin.js'),
-        blog: undefined,
-        library: undefined,
+        blog: require('./blog.js'),
+        library: require('./library.js'),
         message: require('./message.js'),
         notes: undefined,
         page: require('./page.js'),
@@ -129,7 +131,7 @@ var migration_functions = {
         assignment: require('./assignment.js'),
         chat: require('./chat.js'),
         feedback: require('./feedback.js'),
-        glossary: undefined,
+        glossary: require('./glossary.js'),
         scorm:  require('./scorm.js'),
         wiki: undefined,
         workshop: undefined,
@@ -141,7 +143,7 @@ var migration_functions = {
         url: undefined,
         quiz: require('./quiz.js'),
         choice: undefined,
-        lesson: undefined,
+        lesson: require('./lesson.js'),
         lti: undefined,
         data: undefined,
         journal: undefined,
@@ -162,7 +164,7 @@ function migrate_log_rows(t, m, a, row, rest, done){
     inc_stat(key + '.count');
     let tool = migration_functions[t][m][a],
         next = () => { migrate_log_rows(t, m, a, rest.shift(), rest, done) },
-        verbose = tool.verbose;
+        verbose = tool.verbose,
         run_match = (r) => {
             let sm = tool.sql_match(r);
             if (!sm){

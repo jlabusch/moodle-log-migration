@@ -1,8 +1,4 @@
 var restrict_clause = require('./sql_restrictions.js')(),
-    make_alias = require('./common.js').make_alias,
-    bogus_email = require('./common.js').bogus_email,
-    fix_by_shadow_index = require('./common.js').fix_by_shadow_index,
-    fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
 /*

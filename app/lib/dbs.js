@@ -1,3 +1,5 @@
+/*eslint no-console: ["warn", { allow: ["log"] }] */
+
 var mysql = require('mysql'),
     pg = require('pg');
 
@@ -14,14 +16,27 @@ function mysql_to_postgres(sql) {
                 // es_es -> es multilang change
                 .replace(/"es_es"/, '"es"')
                 // escaping single quotes works differently
-                .replace(/\\'/g, "''");
+                .replace(/\\'/g, "''")
+                // replacing \t with a space
+                .replace(/\\t/g, " ");
+}
+
+function handle_connection_attempt(caller, next){
+    return function(err){
+        if (err){
+            console.log(JSON.stringify(err));
+            setTimeout(() => { caller.test_connection(next) }, 10000);
+            return;
+        }
+        next();
+    }
 }
 
 function Postgres(spec){
     this.handle = new pg.Pool(spec);
     this.spec = spec;
 
-    this.handle.on('error', (err, client) => {
+    this.handle.on('error', (err) => {
         console.log(err.message);
     });
 }
@@ -36,14 +51,7 @@ Postgres.prototype.test_connection = function(next){
     var self = this;
     this.handle.query(
         'select 1 + 1 as solution',
-        function(err, res){
-            if (err){
-                console.log(JSON.stringify(err));
-                setTimeout(() => { self.test_connection(next) }, 10000);
-                return;
-            }
-            next();
-        }
+        handle_connection_attempt(self, next)
     );
 }
 
@@ -62,15 +70,7 @@ Mysql.prototype.test_connection = function(next){
     conn.connect();
     conn.query(
         'select 1 + 1 as solution',
-        function(err, res, fields){
-            if (err){
-                console.log(JSON.stringify(err));
-                setTimeout(() => { self.test_connection(next) }, 10000);
-                return;
-            }
-            conn.end();
-            next();
-        }
+        handle_connection_attempt(self, next)
     );
 }
 

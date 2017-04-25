@@ -1,7 +1,5 @@
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
-    bogus_email = require('./common.js').bogus_email,
-    fix_by_shadow_index = require('./common.js').fix_by_shadow_index,
     fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
@@ -66,23 +64,23 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                        'SELECT c.id AS course, ' +
-                        '       s.id AS scorm_id, ' + 
-                        '       u.id AS userid, u.username, ' +
-                        '       cm.id AS cmid ' +
-                        'FROM mdl_scorm s ' +
-                        'JOIN mdl_course c ON c.id=s.course ' +
-                        'JOIN mdl_user u ON BINARY u.email = ? ' +
-                        'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
-                            "   (SELECT id from mdl_modules where name = 'scorm') " +
-                        'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
-                        [
-                            row["email"],
-                            row["scorm_name"],
-                            row["scorm_reference"],
-                            row["course_shortname"]
-                        ]
-                    )
+                'SELECT c.id AS course, ' +
+                '       s.id AS scorm_id, ' + 
+                '       u.id AS userid, u.username, ' +
+                '       cm.id AS cmid ' +
+                'FROM mdl_scorm s ' +
+                'JOIN mdl_course c ON c.id=s.course ' +
+                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
+                    "   (SELECT id from mdl_modules where name = 'scorm') " +
+                'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
+                [
+                    row["email"],
+                    row["scorm_name"],
+                    row["scorm_reference"],
+                    row["course_shortname"]
+                ]
+            )
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -184,30 +182,31 @@ var library = {
                     'JOIN mdl_course c ON c.id = log.course ' +
                     'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
                     'JOIN mdl_context ct ON ct.contextlevel = 70 AND ct.instanceid = cm.id ' +
-                    'JOIN mdl_scorm s on s.id = cm.instance ' +// in this case (compared to 'add' action) I'm joining by "s.id = cm.instance" because log.info !=s.id
+                    'JOIN mdl_scorm s on s.id = cm.instance ' +// in this case(compared to 'add' action) I'm joining by "s.id = cm.instance" because log.info !=s.id
+                    // 'JOIN mdl_files f on f.contextid = ct.id AND f.filename =' +
                     "WHERE log.module = 'scorm' AND log.action = 'launch' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
-                        'SELECT c.id AS course, ' +
-                        '       s.id AS scorm_id, ' + 
-                        '       u.id AS userid, u.username, ' +
-                        '       cm.id AS cmid, ' +
-                        '       ct.id AS context_id '+
-                        'FROM mdl_scorm s ' +
-                        'JOIN mdl_course c ON c.id=s.course ' +
-                        'JOIN mdl_user u ON BINARY u.email = ? ' +
-                        'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
-                            "   (SELECT id from mdl_modules where name = 'scorm') " +
-                        'JOIN mdl_context ct on ct.contextlevel = 70 AND ct.instanceid = cm.id ' +
-                        'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
-                        [
-                            row["email"],
-                            row["scorm_name"],
-                            row["scorm_reference"],
-                            row["course_shortname"]
-                        ]
-                    )
+                'SELECT c.id AS course, ' +
+                '       s.id AS scorm_id, ' + 
+                '       u.id AS userid, u.username, ' +
+                '       cm.id AS cmid, ' +
+                '       ct.id AS context_id '+
+                'FROM mdl_scorm s ' +
+                'JOIN mdl_course c ON c.id=s.course ' +
+                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
+                    "   (SELECT id from mdl_modules where name = 'scorm') " +
+                'JOIN mdl_context ct on ct.contextlevel = 70 AND ct.instanceid = cm.id ' +
+                'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
+                [
+                    row["email"],
+                    row["scorm_name"],
+                    row["scorm_reference"],
+                    row["course_shortname"]
+                ]
+            )
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -239,7 +238,7 @@ var library = {
     },
     "delete attempts": {// this action has only 13 entries
         /*
-        In this case, because info != mdl_scorm.id, I got the mdl_scorm by the mdl_course_modules.instance.
+        Same as the add action, this case has to do only one-pass matching because the url contains just the mdl_course_modules.id
 
         | userid | course |  cmid | url                             | info   |
         +--------+--------+-------+---------------------------------+--------+
@@ -283,6 +282,7 @@ var library = {
         |   176  | 1. MSF in the Humanitarian Arena                            | Humanitarian Arena_Questions_Answers.zip                                          |
         +--------+-------------------------------------------------------------+-----------------------------------------------------------------------------------+
         */
+        // alias: () => { make_alias(library, 'delete attempts', 'launch') }
         sql_old:    'SELECT log.*, ' +
             '       u.email, u.username, ' +
             '       cm.instance AS module_instance, ' +
@@ -297,23 +297,23 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                        'SELECT c.id AS course, ' +
-                        '       s.id AS scorm_id, ' + 
-                        '       u.id AS userid, u.username, ' +
-                        '       cm.id AS cmid ' +
-                        'FROM mdl_scorm s ' +
-                        'JOIN mdl_course c ON c.id=s.course ' +
-                        'JOIN mdl_user u ON BINARY u.email = ? ' +
-                        'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
-                            "   (SELECT id from mdl_modules where name = 'scorm') " +
-                        'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
-                        [
-                            row["email"],
-                            row["scorm_name"],
-                            row["scorm_reference"],
-                            row["course_shortname"]
-                        ]
-                    )
+                'SELECT c.id AS course, ' +
+                '       s.id AS scorm_id, ' + 
+                '       u.id AS userid, u.username, ' +
+                '       cm.id AS cmid ' +
+                'FROM mdl_scorm s ' +
+                'JOIN mdl_course c ON c.id=s.course ' +
+                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
+                    "   (SELECT id from mdl_modules where name = 'scorm') " +
+                'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
+                [
+                    row["email"],
+                    row["scorm_name"],
+                    row["scorm_reference"],
+                    row["course_shortname"]
+                ]
+            )
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -344,9 +344,68 @@ var library = {
         }
     },
     "pre-view": {
+        /*
+        Same as the add action, this case has to do only one-pass matching because the url contains just the mdl_course_modules.id
+
+        | userid | course |  cmid | url                             | info   |
+        +--------+--------+-------+---------------------------------+--------+
+        |    2   |    18  |  315  |              view.php?id=315    |  13    |
+        |    21  |    18  |  315  |              view.php?id=315    |  13    |
+             |         |       |                               |        |
+        mdl_user.id    |       |                               |        |
+                mdl_course.id  |                               |        |
+                      mdl_course_modules.id                    |        |
+                                            mdl_course_modules.id       |
+                                                                    mdl_scorm.id
+        ========
+         PASS 1
+        ========
+
+        SELECT course,cmid,url FROM `mdl_log` WHERE module='scorm' AND action='pre-view' AND id=24780
+        +--------+-------+--------------------------------+
+        | course | cmid  | url                            |
+        +--------+-------+--------------------------------+
+        |    18  | 315   | view.php?id=315                |
+        +--------+-------+--------------------------------+
+
+        SELECT course,instance FROM `mdl_course_modules` WHERE  id=315
+        +--------+----------+
+        | course | instance |
+        +--------+----------+
+        |    18  |     13   |
+        +--------+----------+
+
+        SELECT shortname FROM `mdl_course` WHERE  id=18
+        +----------------------+
+        | shortname            |
+        +----------------------+
+        | BTJuly 2009          |
+        +----------------------+
+
+        SELECT course,name,reference FROM `mdl_scorm` WHERE  id=13
+        +--------+---------------------------------+----------------------------------------+
+        | course | name                            | reference                              |
+        +--------+---------------------------------+----------------------------------------+
+        |    18  | Online Communication Principles | /OnlineCommunicationPrinciplesV5.zip   |
+        +--------+---------------------------------+----------------------------------------+
+        */
         alias: () => { make_alias(library, 'pre-view', 'add') }
     },
     "report": {
+        /*
+        Same as the add action, this case has to do only one-pass matching because the url contains just the mdl_course_modules.id
+
+        | userid | course |  cmid | url                             | info   |
+        +--------+--------+-------+---------------------------------+--------+
+        |    48  |    18  |  315  |              view.php?id=315    |  13    |
+        |    48  |    18  |  315  |              view.php?id=315    |  13    |
+             |         |       |                               |        |
+        mdl_user.id    |       |                               |        |
+                mdl_course.id  |                               |        |
+                      mdl_course_modules.id                    |        |
+                                            mdl_course_modules.id       |
+                                                                    mdl_scorm.id
+        */
         alias: () => { make_alias(library, 'report', 'add') }
     },
     "update": { 
