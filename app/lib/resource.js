@@ -75,12 +75,12 @@ var library = {
                 'LEFT JOIN mdl_course_modules cm ON cm.course = c.id AND cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'resource') " +
                 'WHERE c.shortname = ?',
-            [
-                row["username"],
-                row["email"],
-                row["course_shortname"]
-            ]
-        )
+                [
+                    row["username"],
+                    row["email"],
+                    row["course_shortname"]
+                ]
+            )
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -115,7 +115,7 @@ var library = {
         }
     },
     "view": {
-    alias: () => { make_alias(library, 'view', 'update') }
+        alias: () => { make_alias(library, 'view', 'update') }
     },
     "view all": {
         /*     
@@ -144,11 +144,11 @@ var library = {
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
                     'WHERE c.shortname = ?',
-            [
-                row["username"],
-                row["email"],
-                row["course_shortname"]
-            ]
+                [
+                    row["username"],
+                    row["email"],
+                    row["course_shortname"]
+                ]
             )
         },
 
