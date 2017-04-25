@@ -55,8 +55,8 @@ services:
             - ./app/.eslintrc.json:/opt/.eslintrc.json
             - ./db:/opt/data
         environment:
-            RESTRICT_MODULES: "page"
-            RESTRICT_ACTIONS: "view"
+            # RESTRICT_MODULES: "user"
+            # RESTRICT_ACTIONS: "login"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
             
