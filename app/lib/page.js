@@ -16,7 +16,7 @@ var library = {
         mdl_user.id    |       |                               |        |
                 mdl_course.id  |                               |        |
                       mdl_course_modules.id                    |        |
-                                            mdl_course_modules.id       |
+                                            mdl_course_modules.id  		|
                                                                     mdl_page.id 
         ========
          PASS 1
@@ -48,7 +48,7 @@ var library = {
         +--------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
         |    1   | <span lang="en" class="multilang">Learning Info</span><span lang="es_es" class="multilang">Learning info</span><span lang="fr" class="multilang">Info d'apprentissage</span>  | 
         +--------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-        */
+        */	
         sql_old:    'SELECT log.*, p.id AS page_id, ' +
             '       u.username, u.email, ' +
             '       cm.instance AS module_instance, ' +
@@ -63,16 +63,16 @@ var library = {
               
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       p.id AS page_id, ' + 
-                '       u.id AS userid, u.username, ' +
-                '       cm.id AS cmid ' +
-                'FROM mdl_course c ' +
-                'LEFT JOIN mdl_page p ON p.course = c.id ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-                'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
-                    "   (SELECT id from mdl_modules where name = 'page') " +
-                'WHERE c.shortname = ? AND p.name = ?',
+                    'SELECT c.id AS course, ' +
+                    '       p.id AS page_id, ' + 
+                    '       u.id AS userid, u.username, ' +
+                    '       cm.id AS cmid ' +
+                    'FROM mdl_course c ' +
+                    'LEFT JOIN mdl_page p ON p.course = c.id ' +
+                    'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                    'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
+                        "   (SELECT id from mdl_modules where name = 'page') " +
+                    'WHERE c.shortname = ? AND p.name = ?',
                 [
                     row["username"],
                     row["email"],
@@ -90,7 +90,6 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cmid);
-            // var updated_info = (old_row.page_id != null) ? match_row.page_id : "page "+old_row.info+" not found";
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -110,7 +109,7 @@ var library = {
         }
     },
     "update": {
-        /*
+		/*
         This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
 
         | userid | course |  cmid | url                             | info |
@@ -121,7 +120,7 @@ var library = {
         mdl_user.id    |       |                               |        |
                 mdl_course.id  |                               |        |
                       mdl_course_modules.id                    |        |
-                                            mdl_course_modules.id       |
+                                            mdl_course_modules.id  		|
                                                                     mdl_page.id 
         ========
          PASS 1
@@ -157,20 +156,6 @@ var library = {
         alias: () => { make_alias(library, 'update', 'add') }
     },
     "view": {
-        /*
-        This case has to do only one-pass matching because the url contains just the mdl_course_modules.id
-
-        | userid | course |  cmid | url                             | info |
-        +--------+--------+-------+---------------------------------+------+
-        |  1443  |     1  |  9966 |              view.php?id=9966   |  386 |
-        |  1570  |     97 |  6053 |              view.php?id=6053   |  296 |
-             |         |       |                               |        |
-        mdl_user.id    |       |                               |        |
-                mdl_course.id  |                               |        |
-                      mdl_course_modules.id                    |        |
-                                            mdl_course_modules.id       |
-                                                                    mdl_page.id
-        */
         alias: () => { make_alias(library, 'view', 'add') }
     },
     "view all": {
@@ -179,14 +164,13 @@ var library = {
 
         | userid | course |  cmid | url                             | info |
         +--------+--------+-------+---------------------------------+------+
-        |    48  |     18 |    0  |              view.php?id=18     |      |
-        |    48  |     18 |    0  |              view.php?id=18     |      |
+        |  1581  |    140 |    0  |              view.php?id=140    |      |
+        |   566  |     96 |    0  |              view.php?id=96     |      |
              |         |       |                              |        
         mdl_user.id    |       |                              |        
                 mdl_course.id  |                              |        
                       mdl_course_modules.id                   |       
-                                                    mdl_course.id       
-                                                                    
+                                                    mdl_course.id               
         */
         sql_old:    'SELECT log.*, ' +
             '       u.username, u.email, ' +
@@ -194,15 +178,15 @@ var library = {
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
             'JOIN mdl_course c ON c.id = log.course ' +
-            "WHERE log.module = 'resource' AND log.action = 'view all' AND " + restrict_clause,
+            "WHERE log.module = 'page' AND log.action = 'view all' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username, u.email ' +
-                'FROM mdl_course c ' +
-                'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-                'WHERE c.shortname = ?',
+                    'SELECT c.id AS course, ' +
+                    '       u.id AS userid, u.username, u.email ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                    'WHERE c.shortname = ?',
                 [
                     row["username"],
                     row["email"],
@@ -237,7 +221,7 @@ var library = {
                         ')';
             next && next(null, output);
         }
-    },
+    }      
 };
 
 module.exports = library;

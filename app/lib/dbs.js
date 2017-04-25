@@ -79,7 +79,7 @@ module.exports = {
     "old": new Mysql({
         host: "db_old",
         user: "root",
-        password: "abc123",
+        password: "",
         database: "moodle_old",
         //debug: ['ComQueryPacket', 'RowDataPacket'],
         connectionLimit: 20
