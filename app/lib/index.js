@@ -120,7 +120,7 @@ var migration_functions = {
         upload: undefined,
         admin: require('./admin.js'),
         blog: require('./blog.js'),
-        library: undefined,
+        library: require('./library.js'),
         message: require('./message.js'),
         notes: undefined,
         page: require('./page.js'),

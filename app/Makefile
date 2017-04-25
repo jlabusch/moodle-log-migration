@@ -1,7 +1,8 @@
 .PHONY: lint
 
-DOCKER=docker
+DOCKER=sudo docker
+COMPOSE=sudo docker-compose
 
 lint:
-	$(DOCKER) exec -it $$($(DOCKER) ps | grep moodle-log-migrator | awk '{print $$1}') ./node_modules/.bin/eslint ./lib/*.js
+	$(DOCKER) exec -it $$($(COMPOSE) ps | grep app_1 | awk '{print $$1}') ./node_modules/.bin/eslint ./lib/*.js
 
