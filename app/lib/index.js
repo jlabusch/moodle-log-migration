@@ -129,7 +129,7 @@ var migration_functions = {
         tag: undefined,
         assign:     require('./assign.js'),
         assignment: require('./assignment.js'),
-        chat: undefined,
+        chat: require('./chat.js'),
         feedback: require('./feedback.js'),
         glossary: require('./glossary.js'),
         scorm:  require('./scorm.js'),
