@@ -1,7 +1,5 @@
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
-    bogus_email = require('./common.js').bogus_email,
-    fix_by_shadow_index = require('./common.js').fix_by_shadow_index,
     fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
@@ -22,7 +20,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name ' +
                     'FROM mdl_log log ' +
@@ -35,17 +33,18 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       g.id AS glossaryid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
                 "   (SELECT id from mdl_modules where name = 'glossary') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["course_shortname"]
                 ]
@@ -54,7 +53,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -95,7 +94,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name, ' +
                     '       gc.name AS category_name ' +
@@ -110,11 +109,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       gc.id AS categoryid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_glossary_categories gc ON gc.glossaryid = g.id AND BINARY gc.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
@@ -122,6 +121,7 @@ var library = {
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["category_name"],
                     row["course_shortname"]
@@ -131,7 +131,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -175,7 +175,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name, ' +
                     '       ge.timecreated AS entry_time ' +
@@ -190,11 +190,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       ge.id AS entryid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_glossary_entries ge ON ge.glossaryid = g.id AND BINARY ge.timecreated = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
@@ -202,6 +202,7 @@ var library = {
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["entry_time"],
                     row["course_shortname"]
@@ -211,7 +212,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -255,7 +256,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name, ' +
                     '       ge.timecreated AS entry_time ' +
@@ -270,11 +271,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       ge.id AS entryid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_glossary_entries ge ON ge.glossaryid = g.id AND BINARY ge.timecreated = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
@@ -282,6 +283,7 @@ var library = {
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["entry_time"],
                     row["course_shortname"]
@@ -291,7 +293,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -335,7 +337,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name ' +
                     'FROM mdl_log log ' +
@@ -348,16 +350,17 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
                 "   (SELECT id from mdl_modules where name = 'glossary') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["course_shortname"]
                 ]
@@ -366,7 +369,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -419,7 +422,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
@@ -429,12 +432,13 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username AS uname ' +
+                '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["course_shortname"]
                 ]
             );
@@ -442,7 +446,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -485,7 +489,7 @@ var library = {
 
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.username, ' +
+                    '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       g.name AS glossary_name, ' +
                     '       ge.timecreated AS entry_time ' +
@@ -500,11 +504,11 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username as uname, ' +
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       ge.id AS entryid ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON u.username = ?  ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
                 'JOIN mdl_glossary_entries ge ON ge.glossaryid = g.id AND BINARY ge.timecreated = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = g.id AND cm.course = c.id and cm.module = ' +
@@ -512,6 +516,7 @@ var library = {
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
+                    row["email"],
                     row["glossary_name"],
                     row["entry_time"],
                     row["course_shortname"]
@@ -521,7 +526,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.uname;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 

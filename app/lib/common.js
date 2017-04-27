@@ -11,16 +11,6 @@ exports.make_alias = function(library, this_action, from_action){
     });
 }
 
-exports.bogus_email = function(x){
-    // | id   | email                            |
-    // +------+----------------------------------+
-    // | 1542 | ed268db7fcf834e4ac18222e7252815a |
-    // | 2128 | ed268db7fcf834e4ac18222e7252815a |
-    // +------+----------------------------------+
-    return  x.match(/^[a-f0-9]+$/) ||
-            x.match(/^\s*$/);
-}
-
 exports.fix_by_match_index = function(log_row, old_matches, new_matches, cmp){
     if (!new_matches){
         //console.log('fix_by_match_index -> no new rows');

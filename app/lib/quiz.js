@@ -1,7 +1,4 @@
 var restrict_clause = require('./sql_restrictions.js')(),
-    make_alias = require('./common.js').make_alias,
-    bogus_email = require('./common.js').bogus_email,
-    fix_by_shadow_index = require('./common.js').fix_by_shadow_index,
     fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
@@ -633,29 +630,26 @@ var library = {
                 "AND " + restrict_clause,
 
         sql_match: (row) => {
-            return [row.attempt_id, row.slot] ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, qs.slot AS slot, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_question_attempts qea ON qea.questionusageid = qa.uniqueid ' +
-                    'JOIN mdl_quiz_slots qs ON qs.questionid = qea.questionid AND qs.quizid = q.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
+            return mysql.format(
+                'SELECT qa.id AS attempt_id, qs.slot AS slot, ' +
+                'u.username AS u_username, u.email AS u_email ' +
+                'FROM mdl_quiz_attempts qa ' +
+                'JOIN mdl_quiz q ON q.id = qa.quiz ' +
+                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                'JOIN mdl_course c ON c.id = q.course ' +
+                'JOIN mdl_course_modules cm ON cm.course = c.id ' +
+                'JOIN mdl_question_attempts qea ON qea.questionusageid = qa.uniqueid ' +
+                'JOIN mdl_quiz_slots qs ON qs.questionid = qea.questionid AND qs.quizid = q.id ' +
+                'JOIN mdl_modules m ON m.id = cm.module ' +
+                'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
+                [
+                    row["u_email"],
+                    row["u_username"],
+                    'quiz',
+                    row["course_shortname"],
+                    row["quiz_name"]
+                ]
+            );
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -667,12 +661,11 @@ var library = {
         fn: function(old_row, match_row, next){
             match_row.attempt_id = match_row.attempt_id || '';
             match_row.slot = match_row.slot || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
-            var updated_url_2 = updated_url.replace(/\?slot=\d+/, '?slot=' + match_row.slot);
+            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id)
+                                         .replace(/\?slot=\d+/, '?slot=' + match_row.slot);
 
 
             match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -684,7 +677,7 @@ var library = {
                                 "' " + old_row.module + "'",
                                 match_row.cmid,
                                 "' " + old_row.action + "'",
-                                "' " + updated_url_2 + "'",
+                                "' " + updated_url + "'",
                                 "' " + match_row.quiz_id + "'"
                             ].join(',') +
                         ')';
@@ -878,30 +871,27 @@ var library = {
                 "AND " + restrict_clause,
 
         sql_match: (row) => {
-            return [row.cm_id, row.quiz_attempt_id] ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'qa.id AS quiz_attempt_id, ' +
-                    'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                    'c.id AS course_id, ' +
-                    'cm.id AS cm_id ' +
-                    'FROM mdl_course_modules cm ' +
-                    'JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
+            return mysql.format(
+                'SELECT cm.id AS cm_id, ' +
+                'qa.id AS quiz_attempt_id, ' +
+                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
+                'c.id AS course_id, ' +
+                'cm.id AS cm_id ' +
+                'FROM mdl_course_modules cm ' +
+                'JOIN mdl_course c ON c.id = cm.course ' +
+                'JOIN mdl_quiz q ON q.id = cm.instance ' +
+                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                'JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
+                'JOIN mdl_modules m ON m.id = cm.module ' +
+                'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
+                [
+                    row["u_email"],
+                    row["u_username"],
+                    'quiz',
+                    row["course_shortname"],
+                    row["quiz_name"],
+                ]
+            );
         },
 
         fixer: function(log_row, old_matches, new_matches){
@@ -913,8 +903,8 @@ var library = {
         fn: function(old_row, match_row, next){
             match_row.cm_id = match_row.cm_id || '';
             match_row.quiz_attempt_id = match_row.quiz_attempt_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var updated_url_2 = updated_url.replace(/\?attempt=\d+/, '?attempt=' + match_row.quiz_attempt_id);
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id)
+                                         .replace(/\?attempt=\d+/, '?attempt=' + match_row.quiz_attempt_id);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -1090,7 +1080,7 @@ var library = {
         }
     },
 
-    "view all":{ undefined,
+    "view all": undefined,
         /*
         +--------+------------+--------+---------------+--------+--------+------+----------+-----------------+------+
         | id     | time       | userid | ip            | course | module | cmid | action   | url             | info |
@@ -1104,7 +1094,6 @@ var library = {
 
         We do not run this query as there is no course module and quiz data.
         */
-    },
 
     "view summary":{
         /*
