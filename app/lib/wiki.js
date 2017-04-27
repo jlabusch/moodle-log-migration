@@ -284,9 +284,9 @@ var library = {
             next && next(null, output);
         }        
     },
-    "info":undefined,
-    "links":undefined,
-    "overridelocks":undefined
+    "info":undefined,//just one mdl_log row
+    "links":undefined,//just one mdl_log row
+    "overridelocks":undefined// 7 mdl_log rows no matches to the mdl_wiki_pages
 };
 
 module.exports = library;
