@@ -22,6 +22,16 @@ services:
         environment:
             MYSQL_ROOT_PASSWORD: "abc123"
 
+    db_new_admin:
+        image: thajeztah/pgadmin4:latest
+        links:
+            - db_new:db
+        ports:
+            - "5051:5051"
+        environment:
+            POSTGRES_PASSWORD: "abc123"
+            PG_ADMIN_PORT: "5051"
+
     db_new:
         image: postgres:9.4
         expose:
@@ -35,17 +45,18 @@ services:
     
     app:
         image: jlabusch/moodle-log-migrator
-        build: .
+        build: app
         links:
             - db_old
             - db_new
         volumes:
-            - ./lib:/opt/lib:ro
+            - ./app/lib:/opt/lib:ro
+            - ./app/migration.js:/opt/migration.js:ro
+            - ./app/.eslintrc.json:/opt/.eslintrc.json
             - ./db:/opt/data
         environment:
             # RESTRICT_MODULES: "user"
             # RESTRICT_ACTIONS: "login"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"
-
-
+            

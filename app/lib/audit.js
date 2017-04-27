@@ -1,3 +1,5 @@
+/*eslint no-console: ["warn", { allow: ["log"] }] */
+
 var fs = require('fs');
 
 function logger(key){

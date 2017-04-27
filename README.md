@@ -40,4 +40,5 @@ Environment variables supported:
 Debugging:
 
  - PHPMyAdmin will run on localhost:8081 in case you need to look at the old database schema
+ - pgadmin4 will run on localhost:5051
 
