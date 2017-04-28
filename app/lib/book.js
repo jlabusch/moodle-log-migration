@@ -183,7 +183,7 @@ var library = {
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
-                    "WHERE log.module = 'folder' AND log.action = 'view all' AND " + restrict_clause,
+                    "WHERE log.module = 'book' AND log.action = 'view all' AND " + restrict_clause,
 
         sql_match:  (row) => {
             return mysql.format(

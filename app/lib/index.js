@@ -126,7 +126,7 @@ var migration_functions = {
         page: require('./page.js'),
         resource:  require('./resource.js'),
         role: undefined,
-        tag: undefined,
+        tag: require('./tag.js'),
         assign:     require('./assign.js'),
         assignment: require('./assignment.js'),
         chat: require('./chat.js'),
@@ -142,12 +142,12 @@ var migration_functions = {
         label: undefined,
         url: require('./url.js'),
         quiz: require('./quiz.js'),
-        choice: undefined,
+        choice: require('./choice.js'),
         lesson: require('./lesson.js'),
-        lti: undefined,
-        data: undefined,
-        journal: undefined,
-        bigbluebuttonbn: undefined
+        lti: require('./lti.js'),
+        data: require('./data.js'),
+        journal: "Can't be migrated because mdl_journal table is missing",
+        bigbluebuttonbn: "Can't be migrated because mdl_bigbluebuttonbn table is missing"
     }
 };
 
