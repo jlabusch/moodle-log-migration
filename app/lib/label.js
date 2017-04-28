@@ -5,7 +5,7 @@ var restrict_clause = require('./sql_restrictions.js')(),
 
 var library = {
     "add": {
-    	//The data structure has 'label_id' in the 'info' column. (same as chat module -> add action)
+        //The data structure has 'label_id' in the 'info' column. (same as chat module -> add action)
         sql_old:    'SELECT log.*, l.id AS label_id, ' +
                 '       u.username, u.email, ' +
                 '       l.name AS label_name, ' +

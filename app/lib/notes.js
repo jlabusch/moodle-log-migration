@@ -14,7 +14,7 @@ var library = {
         mdl_user.id    |       |                    |                |             
                 mdl_course.id  |                    |                |
                       mdl_course_modules.id         |                |
-                      					mdl_course.id	             |        
+                      					mdl_course.id	             |   
                                                                      |   
                                                                 mdl_post.id
         */
@@ -140,5 +140,3 @@ var library = {
 }
 
 module.exports = library;
-
-
