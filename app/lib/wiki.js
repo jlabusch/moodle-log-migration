@@ -19,7 +19,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       w.id AS wiki_id, w.name AS wiki_name, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
@@ -88,7 +88,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       w.id AS wiki_id, w.name AS wiki_name, ' + 
                 '       sw.id AS subwiki_id, ' +
                 '       wp.id AS wiki_page_id, wp.title AS wiki_page_title, ' +
@@ -179,7 +179,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       w.id AS wiki_id, w.name AS wiki_name, ' + 
                 '       sw.id AS subwiki_id, ' +
                 '       wp.id AS wiki_page_id, wp.title AS wiki_page_title, ' +
@@ -244,7 +244,7 @@ var library = {
     
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +

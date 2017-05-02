@@ -61,7 +61,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       ch.id AS chat_id, ch.name AS chat_name, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
@@ -142,7 +142,7 @@ var library = {
     
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +

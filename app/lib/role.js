@@ -30,7 +30,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,' +
                 '       r.id AS role_id, r.name AS role_name, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cx.id AS context_id ' +
@@ -97,7 +97,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,' +
                 '       r.id AS role_id, r.name AS role_name, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
@@ -164,7 +164,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,' +
                 '       r.name AS role_name, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
