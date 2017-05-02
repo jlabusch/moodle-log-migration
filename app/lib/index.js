@@ -112,7 +112,7 @@ function process_action(t, m, a, alist){
 
 var migration_functions = {
     mdl_log: {
-        calendar: "Can't be migrated because mdl_event_subscriptions is empty",
+        calendar:  undefined, //"Can't be migrated because mdl_event_subscriptions is empty",
         forum:  require('./forums.js'),
         login:  require('./login.js'),
         course: require('./course.js'),
@@ -126,7 +126,7 @@ var migration_functions = {
         page: require('./page.js'),
         resource:  require('./resource.js'),
         role: undefined,
-        tag: undefined,
+        tag: require('./tag.js'),
         assign:     require('./assign.js'),
         assignment: require('./assignment.js'),
         chat: require('./chat.js'),
@@ -134,20 +134,20 @@ var migration_functions = {
         glossary: require('./glossary.js'),
         scorm:  require('./scorm.js'),
         wiki: undefined,
-        workshop: undefined,
-        discussion: undefined,
-        book: undefined,
-        folder: undefined,
-        imscp: undefined,
+        workshop: require('./workshop.js'),
+        discussion: require('./discussion.js'),
+        book: require('./book.js'),
+        folder: require('./folder.js'),
+        imscp: require('./imscp.js'),
         label: undefined,
-        url: undefined,
+        url: require('./url.js'),
         quiz: require('./quiz.js'),
-        choice: undefined,
+        choice: require('./choice.js'),
         lesson: require('./lesson.js'),
-        lti: undefined,
-        data: undefined,
-        journal: undefined,
-        bigbluebuttonbn: undefined
+        lti: require('./lti.js'),
+        data: require('./data.js'),
+        journal:  undefined, //"Can't be migrated because mdl_journal table is missing",
+        bigbluebuttonbn:  undefined, //"Can't be migrated because mdl_bigbluebuttonbn table is missing"
     }
 };
 
