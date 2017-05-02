@@ -716,7 +716,6 @@ var library = {
                     ')';
             next && next(null, output);
         }
-
     },
 
     'recent': {
@@ -750,17 +749,347 @@ var library = {
             next && next(null, output);
         }
     },
-    'report live': undefined,
+
+    'report live': {
+        /*
+         mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report live' ORDER BY id DESC LIMIT 1;
+         +---------+------------+--------+----------------+--------+--------+------+-------------+---------------------------------+------+
+         | id      | time       | userid | ip             | course | module | cmid | action      | url                             | info |
+         +---------+------------+--------+----------------+--------+--------+------+-------------+---------------------------------+------+
+         | 2156334 | 1430136446 |   1613 | 195.20.146.189 |    243 | course |    0 | report live | report/loglive/index.php?id=243 | 243  |
+         +---------+------------+--------+----------------+--------+--------+------+-------------+---------------------------------+------+
+
+         userid => mdl_user.id
+         // course  => mdl_course.id
+         // module  => mdl_module.name
+         // cmid    => mdl_course_modules.id
+         url: id    => mdl_course.id
+         info   => course.fullname (?)
+
+         mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report live';
+         +----------+
+         | count(*) |
+         +----------+
+         |      262 |
+         +----------+
+         */
+        sql_old:
+                'SELECT log.*, ' +
+                'u.id, u.username AS u_username, u.email AS u_email ' +
+                'FROM mdl_log log ' +
+                'JOIN mdl_user u ON log.userid = u.id ' +
+                "WHERE log.module = 'course' " +
+                "AND log.action = 'report live' " +
+                "AND " + restrict_clause,
+
+        sql_old_2pass: (row) => {
+            let url_id = row.url.match(/\d+/); // Get course id.
+            if (!url_id) {
+                url_id = [null, row.url];
+            }
+
+            return mysql.format(
+                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'WHERE c.id = ? ',
+                    [
+                        url_id[0]
+                    ]
+                    );
+        },
+
+        sql_match: (row) => {
+            return (row.course_shortname) ?
+                    mysql.format(
+                            'SELECT u.id AS u_userid, ' +
+                            'c.id AS course_id, c.shortname AS course_shortname ' +
+                            'FROM mdl_course c ' +
+                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                            'WHERE c.shortname = ? ',
+                            [
+                                row["u_email"],
+                                row["u_username"],
+                                row["course_shortname"]
+                            ]
+                            )
+                    :
+                    null;
+        },
+
+        fixer: function (log_row, old_matches, new_matches) {
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+            });
+        },
+
+        fn: function (old_row, match_row, next) {
+            match_row.course = match_row.course_id || '';
+            match_row.course_shortname = match_row.course_shortname || '';
+            match_row.userid = match_row.u_userid || '';
+
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.course);
+
+            var updated_info = match_row.course;
+
+            var output = 'INSERT INTO mdl_log ' +
+                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                    '(' +
+                    [
+                        old_row.time,
+                        match_row.userid,
+                        "' " + old_row.ip + "'",
+                        match_row.course,
+                        "' " + old_row.module + "'",
+                        "' " + old_row.cmid + "'",
+                        "' " + old_row.action + "'",
+                        "' " + updated_url + "'",
+                        "' " + updated_info + "'"
+                    ].join(',') +
+                    ')';
+            next && next(null, output);
+        }
+    },
+
     'report log': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report log' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+------------+-----------------------------+------+
+     | id      | time       | userid | ip             | course | module | cmid | action     | url                         | info |
+     +---------+------------+--------+----------------+--------+--------+------+------------+-----------------------------+------+
+     | 2156350 | 1430136640 |   1613 | 195.20.146.189 |    243 | course |    0 | report log | report/log/index.php?id=243 | 243  |
+     +---------+------------+--------+----------------+--------+--------+------+------------+-----------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report log';
+     +----------+
+     | count(*) |
+     +----------+
+     |     2137 |
+     +----------+
+     */
+
     'report outline': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report outline' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+     | id      | time       | userid | ip             | course | module | cmid | action         | url                             | info |
+     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+     | 2156333 | 1430136438 |   1613 | 195.20.146.189 |    243 | course |    0 | report outline | report/outline/index.php?id=243 | 243  |
+     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report outline';
+     +----------+
+     | count(*) |
+     +----------+
+     |     2152 |
+     +----------+
+     */
+
     'report participation': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report participation' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+----------------------+---------------------------------------+------+
+     | id      | time       | userid | ip             | course | module | cmid | action               | url                                   | info |
+     +---------+------------+--------+----------------+--------+--------+------+----------------------+---------------------------------------+------+
+     | 2156335 | 1430136454 |   1613 | 195.20.146.189 |    243 | course |    0 | report participation | report/participation/index.php?id=243 | 243  |
+     +---------+------------+--------+----------------+--------+--------+------+----------------------+---------------------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report participation';
+     +----------+
+     | count(*) |
+     +----------+
+     |      873 |
+     +----------+
+     */
+
     'report stats': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report stats' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+--------------+--------------------------------------------------------+------+
+     | id      | time       | userid | ip             | course | module | cmid | action       | url                                                    | info |
+     +---------+------------+--------+----------------+--------+--------+------+--------------+--------------------------------------------------------+------+
+     | 2156342 | 1430136494 |   1613 | 195.20.146.189 |    243 | course |    0 | report stats | report/stats/graph.php?userid=0&id=243&mode=1&roleid=4 | 243  |
+     +---------+------------+--------+----------------+--------+--------+------+--------------+--------------------------------------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report stats';
+     +----------+
+     | count(*) |
+     +----------+
+     |     1099 |
+     +----------+
+     */
+
     'unenrol': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'unenrol' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+-----------+--------+--------+------+---------+--------------------------+------+
+     | id      | time       | userid | ip        | course | module | cmid | action  | url                      | info |
+     +---------+------------+--------+-----------+--------+--------+------+---------+--------------------------+------+
+     | 2107985 | 1428426205 |      2 | 10.0.0.41 |     52 | course |    0 | unenrol | ../enrol/users.php?id=52 | 52   |
+     +---------+------------+--------+-----------+--------+--------+------+---------+--------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'unenrol';
+     +----------+
+     | count(*) |
+     +----------+
+     |      150 |
+     +----------+
+     */
+
     'update': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'update' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+-----------+--------+--------+------+--------+-----------------+------+
+     | id      | time       | userid | ip        | course | module | cmid | action | url             | info |
+     +---------+------------+--------+-----------+--------+--------+------+--------+-----------------+------+
+     | 2156635 | 1430143023 |      2 | 10.0.0.41 |    211 | course |    0 | update | edit.php?id=211 | 211  |
+     +---------+------------+--------+-----------+--------+--------+------+--------+-----------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'update';
+     +----------+
+     | count(*) |
+     +----------+
+     |      854 |
+     +----------+
+     */
+
     'update mod': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'update mod' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+------------+-------------------------------+-----------+
+     | id      | time       | userid | ip             | course | module | cmid | action     | url                           | info      |
+     +---------+------------+--------+----------------+--------+--------+------+------------+-------------------------------+-----------+
+     | 2156908 | 1430146900 |   1808 | 10.111.112.125 |    274 | course |    0 | update mod | ../mod/page/view.php?id=25570 | page 3142 |
+     +---------+------------+--------+----------------+--------+--------+------+------------+-------------------------------+-----------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'update mod';
+     +----------+
+     | count(*) |
+     +----------+
+     |    19471 |
+     +----------+
+     */
+
     'user report': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'user report' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+----------------+--------+--------+------+-------------+--------------------------------------+------+
+     | id      | time       | userid | ip             | course | module | cmid | action      | url                                  | info |
+     +---------+------------+--------+----------------+--------+--------+------+-------------+--------------------------------------+------+
+     | 2046040 | 1426014890 |      2 | 10.111.112.125 |    296 | course |    0 | user report | user.php?id=296&user=2878&mode=grade | 2878 |
+     +---------+------------+--------+----------------+--------+--------+------+-------------+--------------------------------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'user report';
+     +----------+
+     | count(*) |
+     +----------+
+     |     8082 |
+     +----------+
+     */
+
     'view': undefined,
+    /*
+     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'view' ORDER BY id DESC LIMIT 1;
+     +---------+------------+--------+---------------+--------+--------+------+--------+---------------+------+
+     | id      | time       | userid | ip            | course | module | cmid | action | url           | info |
+     +---------+------------+--------+---------------+--------+--------+------+--------+---------------+------+
+     | 2158226 | 1430200990 |   1666 | 176.34.113.55 |      1 | course |    0 | view   | view.php?id=1 | 1    |
+     +---------+------------+--------+---------------+--------+--------+------+--------+---------------+------+
+
+     userid => mdl_user.id
+     // course  => mdl_course.id
+     // module  => mdl_module.name
+     // cmid    => mdl_course_modules.id
+     url: id    => mdl_course.id
+     info   => course.fullname (?)
+
+     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'view';
+     +----------+
+     | count(*) |
+     +----------+
+     |   473665 |
+     +----------+
+     */
+
     'view section': undefined
+            /*
+             mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'view section' ORDER BY id DESC LIMIT 1;
+             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+             | id      | time       | userid | ip           | course | module | cmid | action       | url                            | info |
+             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+             | 2158159 | 1430197031 |   3170 | 88.6.118.161 |    274 | course |    0 | view section | view.php?id=274&sectionid=2738 | 2738 |
+             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+
+             userid => mdl_user.id
+             // course  => mdl_course.id
+             // module  => mdl_module.name
+             // cmid    => mdl_course_modules.id
+             url: id    => mdl_course.id
+             info   => course.fullname (?)
+
+             mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'view section';
+             +----------+
+             | count(*) |
+             +----------+
+             |    19177 |
+             +----------+
+             */
+
 };
 
 module.exports = library;
