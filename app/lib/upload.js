@@ -38,7 +38,7 @@ var library = {
         sql_match:  (row) => {
             if (row.hasid == false) {          
                 return mysql.format(
-                    'SELECT c.id AS course, ' +
+                    'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                     '       u.id AS userid, u.username, u.email ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -52,7 +52,7 @@ var library = {
             } else {
                 if (row.hascourseid == false) {                   
                     return mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                         '       u.id AS userid, u.username, u.email ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -65,7 +65,7 @@ var library = {
                     ); 
                 } else {   
                     return mysql.format(
-                        'SELECT c.id AS course, c1.id AS target_course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname, c1.id AS target_course, c1.shortname AS target_course_shortname,  ' +
                         '       u.id AS userid, u.username, u.email ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +

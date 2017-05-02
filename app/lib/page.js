@@ -49,10 +49,10 @@ var library = {
         |    1   | <span lang="en" class="multilang">Learning Info</span><span lang="es_es" class="multilang">Learning info</span><span lang="fr" class="multilang">Info d'apprentissage</span>  | 
         +--------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
         */	
-        sql_old:    'SELECT log.*, p.id AS page_id, ' +
+        sql_old:    'SELECT log.*, ' +
             '       u.username, u.email, ' +
             '       cm.instance AS module_instance, ' +
-            '       p.name AS page_name, ' +
+            '       p.id AS page_id, p.name AS page_name, ' +
             '       c.shortname AS course_shortname ' +
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
@@ -63,21 +63,21 @@ var library = {
               
         sql_match:  (row) => {
             return mysql.format(
-                    'SELECT c.id AS course, ' +
-                    '       p.id AS page_id, ' + 
-                    '       u.id AS userid, u.username, ' +
-                    '       cm.id AS cmid ' +
+                    'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                    '       p.id AS page_id, p.name AS page_name, ' + 
+                    '       u.id AS userid, u.username, u.email, ' +
+                    '       cm.id AS cmid, cm.instance AS module_instance ' +
                     'FROM mdl_course c ' +
-                    'LEFT JOIN mdl_page p ON p.course = c.id ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                    'LEFT JOIN mdl_page p ON p.course = c.id AND p.name = ? ' +
                     'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = p.id and cm.module = ' +
                         "   (SELECT id from mdl_modules where name = 'page') " +
-                    'WHERE c.shortname = ? AND p.name = ?',
+                    'WHERE c.shortname = ? ',
                 [
                     row["username"],
                     row["email"],
-                    row["course_shortname"],
-                    row["page_name"]
+                    row["page_name"],
+                    row["course_shortname"]
                 ]
             )
         },
@@ -182,7 +182,7 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                    'SELECT c.id AS course, ' +
+                    'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                     '       u.id AS userid, u.username, u.email ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
@@ -203,7 +203,6 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.course);
-
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +

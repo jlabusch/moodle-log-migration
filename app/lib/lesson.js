@@ -31,10 +31,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       l.id AS lessonid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       l.id AS lessonid, l.name AS lesson_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_lesson l ON l.course = c.id AND l.name = ? ' +
@@ -57,8 +57,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -112,7 +111,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -132,8 +131,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -178,10 +176,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       l.id AS lessonid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       l.id AS lessonid, l.name AS lesson_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_lesson l ON l.course = c.id AND l.name = ? ' +

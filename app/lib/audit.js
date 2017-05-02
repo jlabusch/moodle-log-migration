@@ -5,6 +5,7 @@ var fs = require('fs');
 function logger(key){
     this.key = key;
     this.records = [];
+    this.validated_records = 0;
     this.needs_header = true;
 }
 
@@ -37,6 +38,10 @@ logger.prototype.flush = function(i){
     }
     while (ok && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
+        var valid = validate_record(this.records[i], this.key, i);
+        if(valid) {
+            this.validated_records++;
+        }
         if (process.env.LOSSY_AUDIT){
             i += i;
         }
@@ -46,6 +51,8 @@ logger.prototype.flush = function(i){
         file.once('drain', () => { this.flush(i) });
     }else{
         console.log('audit: ' + this.key + ' => flush() complete => ' + this.records.length + ' lines');
+        console.log('audit validation: ' + this.key + ' => validation complete => ' + this.validated_records + ' valid lines');
+        this.validated_records = 0;
         delete this.records;
     }
 }
@@ -68,6 +75,57 @@ function format_record(r){
             r[2] + '\n';
     }
     return s;
+}
+
+function validate_record(r, k, ln){
+    var v = false;
+    var checks = 0;
+    var checks_available = [];
+    var passed = 0;
+    var checks_passed = [];
+    if (r){
+        var old_keys = Object.keys(r[0]);
+        old_keys.map(function(row) {
+            if (
+                row.indexOf('name') != -1 ||
+                row.indexOf('created') != -1 ||
+                row.indexOf('title') != -1 ||
+                row.indexOf('subject') != -1 || 
+                row.indexOf('reference') != -1  
+            ) {
+
+                var old_value = r[0][row];
+                var match_value = r[1][row];
+                checks++;
+                checks_available.push(row);
+                if (row.indexOf('username') != -1) {
+                    var email_str = row.replace('username', 'email');
+                    if(old_value == match_value || r[0][email_str] == r[1][email_str]) {
+                        checks_passed.push(row);
+                        passed++;
+                    }
+                } else {
+                    if(old_value.indexOf('lang="es_es"') != -1) {
+                        old_value = old_value.replace('lang="es_es"', 'lang="es"');
+                    }
+                    if(old_value == match_value ) {                        
+                        checks_passed.push(row);
+                        passed++;
+                    }
+                }
+            }            
+        });
+        v = checks == passed;
+        if(!v) {
+            console.log('Failed validation: ' + k)
+            console.log('Line: ' + ln)
+            console.log('checks: ' + checks);
+            console.log('passed: ' + passed);
+            console.log('failed checks: ' + JSON.stringify(checks_available.filter(x => checks_passed.indexOf(x) < 0 )));
+            console.log('row: ' + JSON.stringify(r) );
+        }
+    }
+    return v;
 }
 
 var logs = {},

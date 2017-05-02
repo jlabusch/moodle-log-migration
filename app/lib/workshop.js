@@ -21,7 +21,7 @@ var library = {
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
-                    '       c.shortname AS course_shortname, ' +
+                    '       c.shortname AS course_shortname, cm.instance AS module_instance, ' +
                     '       w.name AS workshop_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
@@ -32,10 +32,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       w.id AS workshopid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       w.id AS workshopid, w.name AS workshop_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_workshop w ON w.course = c.id AND BINARY w.name = ? ' +
@@ -92,7 +92,7 @@ var library = {
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
-                    '       c.shortname AS course_shortname, ' +
+                    '       c.shortname AS course_shortname, cm.instance AS module_instance, ' +
                     '       w.name AS workshop_name, ' +
                     '       ws.timecreated AS submission_time, ws.title AS submission_title, ' +
                     '       wa.timecreated AS assessement_time ' +
@@ -107,11 +107,12 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       wa.id AS assessmentid, ' +
-                '       ws.id AS submissionid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance ' +
+                '       w.name AS workshop_name, ' +
+                '       wa.id AS assessmentid, wa.timecreated AS assessement_time, ' +
+                '       ws.id AS submissionid, ws.timecreated AS submission_time, ws.title AS submission_title ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_workshop w ON w.course = c.id AND BINARY w.name = ? ' +
@@ -186,10 +187,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       ws.id AS submissionid ' +
+                '       w.name AS workshop_name, ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       ws.id AS submissionid, ws.timecreated AS submission_time, ws.title AS submission_title ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_workshop w ON w.course = c.id AND BINARY w.name = ? ' +
@@ -295,7 +297,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -315,8 +317,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +

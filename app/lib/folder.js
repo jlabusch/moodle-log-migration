@@ -19,8 +19,8 @@ var library = {
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
-                    '       c.shortname AS course_shortname, ' +
-                    '       f.name AS folder_name ' +
+                    '       c.shortname AS course_shortname, cm.instance AS module_instance, ' +
+                    '       f.id as folderid, f.name AS folder_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
@@ -30,10 +30,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       f.id AS folderid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       f.id AS folderid, f.name AS folder_name  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_folder f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -56,8 +56,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -108,7 +107,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +

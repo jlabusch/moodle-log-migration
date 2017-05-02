@@ -31,7 +31,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       p.id AS postid, p.subject ' +
                 'FROM mdl_course c ' +
@@ -109,7 +109,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -189,9 +189,9 @@ var library = {
         sql_match:  (row) => {
             if (row['type'] == 'group') {
                 return mysql.format(
-                    'SELECT c.id AS course, ' +
+                    'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                     '       u.id AS userid, u.username, u.email, ' +
-                    '       g.id AS groupid ' +
+                    '       g.id AS groupid, g.name AS group_name, g.timecreated AS group_created  ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                     'JOIN mdl_groups g ON BINARY g.name = ? AND  g.timecreated = ? ' +
@@ -206,9 +206,9 @@ var library = {
                 );
             } else if (row['type'] == 'user') {                
                 return mysql.format(
-                    'SELECT c.id AS course, ' +
+                    'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                     '       u.id AS userid, u.username, u.email, ' +
-                    '       u2.id AS targetid ' +
+                    '       u2.id AS targetid, u2.username AS target_username, u2.email AS target_email, ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                     'LEFT JOIN mdl_user u2 ON (u2.username = ? OR u2.email = ? ) ' +
@@ -224,9 +224,9 @@ var library = {
             } else {                
                 if (row['tag_name'] != null) {                
                     return mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                         '       u.id AS userid, u.username, u.email, ' +
-                        '       t.id AS tagid ' +
+                        '       t.id AS tagid, t.name AS tag_name,  ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                         'LEFT JOIN mdl_tag t ON t.name = ? ' +
@@ -240,9 +240,9 @@ var library = {
                     );
                 } else if(row['subject'] != null) {
                     return mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                         '       u.id AS userid, u.username, u.email, ' +
-                        '       p.id AS postid ' +
+                        '       p.id AS postid, p.subject, p.created as post_created ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                         'JOIN mdl_post p ON p.subject = ?  AND p.created = ? ' +
@@ -257,7 +257,7 @@ var library = {
                     );
                 } else {
                     return mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                         '       u.id AS userid, u.username, u.email ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
