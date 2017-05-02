@@ -57,8 +57,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -137,7 +136,7 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/\?id=\d+/, '\?id=' + match_row.cmid);
-            if (old_row.with_chapter == true) {
+            if (old_row.with_chapter === 1) {
                 updated_url = updated_url.replace(/chapterid=\d+/, 'chapterid=' + match_row.chapterid);
             }
             var output ='INSERT INTO mdl_log ' +
@@ -207,8 +206,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +

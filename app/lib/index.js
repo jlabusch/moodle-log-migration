@@ -112,7 +112,7 @@ function process_action(t, m, a, alist){
 
 var migration_functions = {
     mdl_log: {
-        calendar: "Can't be migrated because mdl_event_subscriptions is empty",
+        calendar:  undefined, //"Can't be migrated because mdl_event_subscriptions is empty",
         forum:  require('./forums.js'),
         login:  require('./login.js'),
         course: require('./course.js'),
@@ -146,8 +146,8 @@ var migration_functions = {
         lesson: require('./lesson.js'),
         lti: require('./lti.js'),
         data: require('./data.js'),
-        journal: "Can't be migrated because mdl_journal table is missing",
-        bigbluebuttonbn: "Can't be migrated because mdl_bigbluebuttonbn table is missing"
+        journal:  undefined, //"Can't be migrated because mdl_journal table is missing",
+        bigbluebuttonbn:  undefined, //"Can't be migrated because mdl_bigbluebuttonbn table is missing"
     }
 };
 

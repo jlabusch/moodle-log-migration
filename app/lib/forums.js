@@ -6,7 +6,6 @@ var restrict_clause = require('./sql_restrictions.js')(),
 var library = {
     "add": {
         /*
-
         +--------+--------+------+-----------------+------+
         | userid | course | cmid | url             | info |
         +--------+--------+------+-----------------+------+
@@ -17,7 +16,6 @@ var library = {
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> view.php?id=mdl_course_modules.id 
         info --> mdl_forum.id & mdl_course_modules.instance 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -32,10 +30,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       f.id AS forumid ' +
+                '       f.id AS forumid, f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -58,8 +56,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -80,7 +77,6 @@ var library = {
     },
     "add discussion": {
         /*
-
         +--------+--------+------+-------------------+------+
         | userid | course | cmid | url               | info |
         +--------+------+-----------------+----------+------+
@@ -91,7 +87,6 @@ var library = {
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> discuss.php?d=mdl_forum_discussions.id 
         info --> mdl_forum_discussions.id
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -108,10 +103,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       d.id AS did ' +
+                '       f.name AS forum_name, ' +
+                '       d.id AS did, d.name AS discussion_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'LEFT JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -136,8 +132,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/d=\d+/, 'd=' + match_row.did)
+            var updated_url = old_row.url.replace(/d=\d+/, 'd=' + match_row.did)
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -158,7 +153,6 @@ var library = {
     },
     "mail blocked": {
         /*
-
         +---------+--------+------+-----+------+
         |  userid | course | cmid | url | info |
         +---------+--------+------+-----+------+
@@ -170,7 +164,6 @@ var library = {
         cmid --> always 0
         url --> empty
         info --> empty
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -182,7 +175,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -222,7 +215,6 @@ var library = {
     },
     "mail digest error": {
         /*
-
         +---------+--------+---------+-----+------+
         |  userid | course |   cmid  | url | info |
         +---------+--------+---------+-----+------+
@@ -234,7 +226,6 @@ var library = {
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> empty
         info --> empty
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -249,8 +240,9 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
+                '       f.name AS forum_name, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -294,7 +286,6 @@ var library = {
     },
     "mail error": {
         /*
-
         +---------+--------+---------+---------------------------+----------------------+
         |  userid | course |  cmid  |  url                       |                 info |
         +---------+--------+--------+----------------------------+----------------------+
@@ -308,7 +299,6 @@ var library = {
                                |    |___= mdl_forum_posts.id (created, subject)
                                |________= mdl_forum_discussions.id
         info --> 'La señora Salmon'  mdl_forum_posts.subject
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -327,11 +317,12 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       d.id as did, ' +
-                '       p.id AS postid, p.subject AS postsubject ' +
+                '       d.id as did, d.name as discussion_name, ' +
+                '       p.id AS postid, p.subject AS postsubject, ' +      
+                '       f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -381,7 +372,6 @@ var library = {
     },
     "mark read": {
         /*
-
         +---------+--------+---------+-----------------+---------+
         |  userid | course |  cmid  |  url             |    info |
         +---------+--------+--------+------------------+---------+
@@ -394,7 +384,6 @@ var library = {
         url --> view.php?f=132
                             |___= mdl_forum.id
         info --> mdl_forum.id
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -409,10 +398,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       f.id as forumid ' +
+                '       f.id as forumid, f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -435,8 +424,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/f=\d+/, 'f=' + match_row.forumid);
+            var updated_url = old_row.url.replace(/f=\d+/, 'f=' + match_row.forumid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -460,7 +448,6 @@ var library = {
     },
     "prune post": {
         /*
-
         +---------+--------+--------+----------------------+----------+
         |  userid | course |  cmid  |  url                 |     info |
         +---------+--------+--------+----------------------+----------+
@@ -472,7 +459,6 @@ var library = {
         url --> discuss.php?d=465
                                |________= mdl_forum_discussions.id
         info --> mdl_forum_posts.id (created, subject)
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -491,11 +477,12 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       d.id as did, ' +
-                '       p.id AS postid, p.subject AS postsubject ' +
+                '       d.id as did, d.name as discussion_name, ' +
+                '       p.id AS postid, p.subject AS postsubject, p.created AS post_created, ' +
+                '       f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -523,8 +510,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/d=\d+/, 'd=' + match_row.did);
+            var updated_url = old_row.url.replace(/d=\d+/, 'd=' + match_row.did);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -545,7 +531,6 @@ var library = {
     },
     "search": {
         /*
-
         +---------+--------+------+----------------------------------+------------+
         |  userid | course | cmid |                              url |       info |
         +---------+--------+------+----------------------------------+------------+
@@ -558,7 +543,6 @@ var library = {
                             |           |___= search term used
                             |_______________= mdl_course.id
         info --> 'doubts' - the search term
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -570,7 +554,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -590,8 +574,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -621,7 +604,6 @@ var library = {
     },
     "subscribeall": {    
         /*
-
         +--------+--------+------+-----------------+------+
         | userid | course | cmid | url             | info |
         +--------+--------+------+-----------------+------+
@@ -632,7 +614,6 @@ var library = {
         cmid --> always 0
         url --> index.php?id=42 -- mdl_course.id (unique shortname)
         info --> mdl_course.id (unique shortname)
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -644,7 +625,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -664,8 +645,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -692,7 +672,6 @@ var library = {
     },
     "user report": {
         /*
-
         +---------+--------+--------+--------------------------------------+-------+
         |  userid | course |  cmid  |  url                                 |  info |
         +---------+--------+--------+--------------------------------------+-------+
@@ -706,7 +685,6 @@ var library = {
                                 |    |_____________ = target mdl_user.id                
                                 |__________________ = mdl_course.id (unique shortname)
         info --> target mdl_user.id 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u1.username AS author_username, u1.email AS author_email, ' +
@@ -720,7 +698,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u1.id AS author_userid, u1.username AS author_username, u1.email AS author_email, ' +
                 '       u2.id AS target_userid, u2.username AS target_username, u2.email AS target_email ' +
                 'FROM mdl_course c ' +
@@ -739,7 +717,6 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){        
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-
                 return (lr.author_username === nm.author_username || lr.author_email === nm.author_email) &&
                        (lr.target_username === nm.target_username || lr.target_email === nm.target_email);
             });
@@ -769,7 +746,6 @@ var library = {
     },
     "view subscribers": {
         /*
-
         +---------+--------+---------+-----------------------+--------+
         |  userid | course |  cmid  |  url                   |   info |
         +---------+--------+--------+------------------------+--------+
@@ -782,7 +758,6 @@ var library = {
         url --> subscribers.php?id=68
                                    |___= mdl_forum.id
         info --> mdl_forum.id
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -797,10 +772,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
-                '       f.id as forumid ' +
+                '       f.id as forumid, f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -823,8 +798,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.forumid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.forumid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -857,7 +831,6 @@ var library = {
               |      |
               |      `- 336 -> mdl_course_modules.id (unique course,module,instance)
               `- mdl_course.id (unique shortname)
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -877,11 +850,12 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       d.id as did, ' +
-                '       p.id AS postid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       d.id as did, d.name as discussion_name, ' +
+                '       p.id AS postid, p.created AS post_created, p.subject AS post_subject, ' +
+                '       f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -965,10 +939,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       d.id as did ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       d.id as did, d.name as discussion_name, ' +
+                '       f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
@@ -1027,8 +1002,7 @@ var library = {
                     '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
                     '       cm.instance AS module_instance, ' +
-                    '       f.id AS forum_id, ' +
-                    '       f.name AS forum_name ' +
+                    '       f.id AS forum_id, f.name AS forum_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
@@ -1038,10 +1012,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       f.id AS forum ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       f.id AS forum, f.name AS forum_name  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
