@@ -1447,29 +1447,111 @@ var library = {
         }
     },
 
-    'view section': undefined
-            /*
-             mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'view section' ORDER BY id DESC LIMIT 1;
-             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
-             | id      | time       | userid | ip           | course | module | cmid | action       | url                            | info |
-             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
-             | 2158159 | 1430197031 |   3170 | 88.6.118.161 |    274 | course |    0 | view section | view.php?id=274&sectionid=2738 | 2738 |
-             +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+    'view section': {
+        /*
+         mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'view section' ORDER BY id DESC LIMIT 1;
+         +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+         | id      | time       | userid | ip           | course | module | cmid | action       | url                            | info |
+         +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
+         | 2158159 | 1430197031 |   3170 | 88.6.118.161 |    274 | course |    0 | view section | view.php?id=274&sectionid=2738 | 2738 |
+         +---------+------------+--------+--------------+--------+--------+------+--------------+--------------------------------+------+
 
-             userid => mdl_user.id
-             // course  => mdl_course.id
-             // module  => mdl_module.name
-             // cmid    => mdl_course_modules.id
-             url: id    => mdl_course.id
-             info   => course.fullname (?)
+         userid => mdl_user.id
+         // course  => mdl_course.id
+         // module  => mdl_module.name
+         // cmid    => mdl_course_modules.id
+         url: id    => mdl_course.id
+         info   => course.fullname (?)
 
-             mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'view section';
-             +----------+
-             | count(*) |
-             +----------+
-             |    19177 |
-             +----------+
-             */
+         mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'view section';
+         +----------+
+         | count(*) |
+         +----------+
+         |    19177 |
+         +----------+
+         */
+        sql_old:
+                'SELECT log.*, ' +
+                'c.id AS course_id, c.shortname AS course_shortname, ' +
+                'u.id, u.username AS u_username, u.email AS u_email ' +
+                'FROM mdl_log log ' +
+                'JOIN mdl_course c ON log.course = c.id ' +
+                'JOIN mdl_user u ON log.userid = u.id ' +
+                "WHERE log.module = 'course' " +
+                "AND log.action = 'view section' " +
+                "AND " + restrict_clause + " LIMIT 1000 ",
+
+        sql_old_2pass: (row) => {
+            let url_id = row.url.match(/\d+$/); // Get section id.
+
+            if (!url_id) {
+                url_id = [null, row.url];
+            }
+
+            return mysql.format(
+                    'SELECT cs.id AS cs_id, cs.name AS cs_name ' +
+                    'FROM mdl_course_sections cs ' +
+                    'WHERE cs.id = ? ',
+                    [
+                        url_id[0]
+                    ]
+                    );
+        },
+
+        sql_match: (row) => {
+            return (row.course_shortname) ?
+                    mysql.format(
+                            'SELECT u.id AS u_userid, ' +
+                            'c.id AS course_id, ' +
+                            'cs.id AS cs_id, cs.section AS cs_section ' +
+                            'FROM mdl_course_sections cs ' +
+                            'LEFT JOIN mdl_course c ON c.id = cs.course ' +
+                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                            'WHERE c.shortname = ? AND cs.name = ?',
+                            [
+                                row["u_email"],
+                                row["u_username"],
+                                row["course_shortname"],
+                                row["cs_name"]
+                            ]
+                            )
+                    :
+                    null;
+        },
+
+        fixer: function (log_row, old_matches, new_matches) {
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+            });
+        },
+
+        fn: function (old_row, match_row, next) {
+            match_row.course = match_row.course_id || '';
+            match_row.userid = match_row.u_userid || '';
+            match_row.csid = match_row.cs_id || '';
+
+            var updated_url = old_row.url.replace(/\?sectionid=\d+/, '?sectionid=' + match_row.csid);
+
+            var updated_info = match_row.csid;
+
+            var output = 'INSERT INTO mdl_log ' +
+                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                    '(' +
+                    [
+                        old_row.time,
+                        match_row.userid,
+                        "' " + old_row.ip + "'",
+                        match_row.course,
+                        "' " + old_row.module + "'",
+                        "' " + old_row.cmid + "'",
+                        "' " + old_row.action + "'",
+                        "' " + updated_url + "'",
+                        "' " + updated_info + "'"
+                    ].join(',') +
+                    ')';
+            next && next(null, output);
+        }
+    }
 
 };
 
