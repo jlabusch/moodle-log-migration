@@ -440,7 +440,7 @@ var library = {
 
         We can leave this.
          */
-    'editsection': undefined,
+    'editsection': {
         /*
         mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'editsection' ORDER BY id DESC LIMIT 1;
         +---------+------------+--------+----------------+--------+--------+------+-------------+------------------------+------+
@@ -465,6 +465,87 @@ var library = {
         |     4662 |
         +----------+
         */
+        sql_old:
+            'SELECT log.*, ' +
+                'u.username AS u_username, u.email AS u_email, ' +
+                'c.shortname AS course_shortname ' +
+                'FROM mdl_log log ' +
+                'LEFT JOIN mdl_course c ON log.course = c.id ' +
+                'JOIN mdl_user u ON log.userid = u.id ' +
+                "WHERE log.module = 'course' " +
+                "AND log.action = 'editsection' " +
+                "AND " + restrict_clause,
+
+        sql_old_2pass: (row) => {
+            let url_id = row.url.match(/id=(\d+)/); // Get course_section id.
+            if (!url_id && row.url.match(/id=/)){
+                url_id = [null, row.url];
+            }
+
+            return mysql.format(
+                'SELECT cs.section AS cs_section, cs.name AS cs_name ' +
+                'FROM mdl_course_sections cs ' +
+                'WHERE cs.id = ? ',
+                [
+                    url_id[1]
+                ]
+            );
+        },
+
+        sql_match: (row) => {
+            return (row.cs_name && row.cs_section) ?
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, ' +
+                    'cs.id AS cs_id, cs.section AS cs_section ' +
+                    'FROM mdl_course_sections cs ' +
+                    'LEFT JOIN mdl_course c ON c.id = cs.course ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? AND cs.name = ?',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"],
+                        row["cs_name"]
+                    ]
+                )
+                :
+                null;
+        },
+
+        fixer: function(log_row, old_matches, new_matches){
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+            });
+        },
+
+        fn: function(old_row, match_row, next){
+            match_row.course = match_row.course_id || '';
+            match_row.userid = match_row.u_userid || '';
+            match_row.cs_id  = match_row.cs_id || '';
+
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cs_id);
+
+            var updated_info = (match_row.cs_section + 1);
+
+            var output ='INSERT INTO mdl_log ' +
+                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                        '(' +
+                            [
+                                old_row.time,
+                                match_row.userid,
+                                "' " + old_row.ip + "'",
+                                match_row.course,
+                                "' " + old_row.module + "'",
+                                "' " + old_row.cmid + "'",
+                                "' " + old_row.action + "'",
+                                "' " + updated_url + "'",
+                                "' " + updated_info + "'"
+                            ].join(',') +
+                        ')';
+            next && next(null, output);
+        }
+    },
 
     'enrol': {
         /*
