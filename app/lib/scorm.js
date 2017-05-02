@@ -51,7 +51,7 @@ var library = {
         +--------+-----------------------------+-------------------+
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.email, u.username, ' +
+                    '       u.username, u.email, ' +
                     '       cm.instance AS module_instance, ' +
                     '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
                     '       c.shortname AS course_shortname ' +
@@ -70,11 +70,12 @@ var library = {
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
                 'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["scorm_name"],
                     row["scorm_reference"],
@@ -85,7 +86,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -172,7 +173,7 @@ var library = {
         +-----------+-------------+------------+------------+-----------------+
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.email, u.username, ' +
+                    '       u.username, u.email, ' +
                     '       cm.instance AS module_instance, ' +
                     '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
                     '       c.shortname AS course_shortname, ' +
@@ -195,12 +196,13 @@ var library = {
                 '       ct.id AS context_id '+
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?)  ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
                 'JOIN mdl_context ct on ct.contextlevel = 70 AND ct.instanceid = cm.id ' +
                 'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["scorm_name"],
                     row["scorm_reference"],
@@ -211,7 +213,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -284,7 +286,7 @@ var library = {
         */
         // alias: () => { make_alias(library, 'delete attempts', 'launch') }
         sql_old:    'SELECT log.*, ' +
-            '       u.email, u.username, ' +
+            '       u.username, u.email, ' +
             '       cm.instance AS module_instance, ' +
             '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
             '       c.shortname AS course_shortname ' +
@@ -303,11 +305,12 @@ var library = {
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
                 'WHERE s.name = ? AND s.reference = ? AND c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["scorm_name"],
                     row["scorm_reference"],
@@ -318,7 +321,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -634,7 +637,7 @@ var library = {
                                                         mdl_course.id                              
         */
         sql_old:    'SELECT log.*, ' +
-            '       u.email, u.username, ' +
+            '       u.username, u.email, ' +
             '       c.shortname AS course_shortname ' +
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
@@ -643,12 +646,13 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, c.shortname AS course_shortname' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'WHERE c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["course_shortname"]
                 ]
@@ -657,7 +661,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
