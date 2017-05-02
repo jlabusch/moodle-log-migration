@@ -64,9 +64,9 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference, ' + 
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
@@ -188,9 +188,9 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       ct.id AS context_id '+
                 'FROM mdl_scorm s ' +
@@ -297,16 +297,16 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
+                '       u.id AS userid, u.username, u.email,' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
                 'JOIN mdl_user u ON BINARY u.email = ? ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
-                'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
+                'WHERE s.name = ? AND s.reference = ? AND c.shortname = ?',
                 [
                     row["email"],
                     row["scorm_name"],
@@ -537,11 +537,11 @@ var library = {
         sql_match:  (row) => {
             return row.sco_title ?
                     mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname ' +
                         '       o.id AS sco_id, o.title AS sco_title, o.identifier AS sco_identifier, ' +
-                        '       s.id AS scorm_id, ' + 
+                        '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
                         '       cm.id AS cmid, ' +
-                        '       u.id AS userid, u.username ' +
+                        '       u.id AS userid, u.username, u.email ' +
                         'FROM mdl_scorm_scoes o ' +
                         'JOIN mdl_scorm s ON s.id = o.scorm ' +
                         'JOIN mdl_course c ON c.id=s.course ' +
@@ -643,8 +643,8 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname' +
+                '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON BINARY u.email = ? ' +
                 'WHERE c.shortname = ?',

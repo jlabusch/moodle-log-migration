@@ -21,7 +21,7 @@ var library = {
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
-                    '       p.content ' +
+                    '       p.content, p.id AS post_id, p.subject, p.userid AS post_userid ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
