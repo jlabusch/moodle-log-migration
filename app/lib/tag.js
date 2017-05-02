@@ -28,7 +28,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       t.id AS tagid, t.name as tagname ' +
                 'FROM mdl_course c ' +

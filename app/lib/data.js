@@ -31,10 +31,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       x.id AS dataid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       x.id AS dataid, x.name AS data_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_data x ON x.course = c.id AND BINARY x.name = ? ' +
@@ -103,10 +103,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       x.id AS dataid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       x.id AS dataid, x.name AS data_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_data x ON x.course = c.id AND BINARY x.name = ? ' +

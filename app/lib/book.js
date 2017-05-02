@@ -21,7 +21,7 @@ var library = {
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
-                    '       b.name AS book_name ' +
+                    '       b.id AS bookid, b.name AS book_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
@@ -31,10 +31,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       b.id AS bookid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       b.id AS bookid, b.name AS book_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_book b ON b.course = c.id AND BINARY b.name = ? ' +
@@ -106,11 +106,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       bc.id AS chapterid, ' +
-                '       b.id AS bookid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       bc.id AS chapterid, bc.title AS chapter_name,  ' +
+                '       b.id AS bookid, b.name AS book_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_book b ON b.course = c.id AND BINARY b.name = ? ' +
@@ -186,7 +186,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
