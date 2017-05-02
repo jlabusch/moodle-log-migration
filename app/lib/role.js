@@ -4,7 +4,7 @@ var restrict_clause = require('./sql_restrictions.js')(),
     mysql = require('mysql');
 
 var library = {
-        "assign": {
+    "assign": { 
         /*
         | userid | course |  cmid | url                                          | info     |
         +--------+--------+-------+----------------------------------------------+----------+
