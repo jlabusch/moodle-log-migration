@@ -32,7 +32,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS senderid, u.username AS sender_username, u.email AS sender_email, ' +
                 '       u2.id AS receiverid, u2.username AS receiver_username, u2.email AS receiver_email ' +
                 'FROM mdl_course c ' +
@@ -129,7 +129,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS senderid, u.username AS sender_username, u.email AS sender_email, ' +
                 '       u2.id AS receiverid, u2.username AS receiver_username, u2.email AS receiver_email ' +
                 'FROM mdl_course c ' +

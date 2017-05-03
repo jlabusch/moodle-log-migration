@@ -98,6 +98,9 @@ function validate_record(r, k, ln){
                 var match_value = r[1][row];
                 checks++;
                 checks_available.push(row);
+                if(old_value.indexOf('MSF e-Campus') != -1) {
+                    old_value = old_value.replace('MSF e-Campus', 'MSF E-Campus');
+                }
                 if (row.indexOf('username') != -1) {
                     var email_str = row.replace('username', 'email');
                     if(old_value == match_value || r[0][email_str] == r[1][email_str]) {
