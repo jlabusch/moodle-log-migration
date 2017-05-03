@@ -38,7 +38,7 @@ logger.prototype.flush = function(i){
     }
     while (ok && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
-        var valid = validate_record(this.records[i], this.key, i);
+        var valid = validate_record(this.records[i], this.key, i);        
         if(valid) {
             this.validated_records++;
         }
@@ -85,6 +85,16 @@ function validate_record(r, k, ln){
     var checks_passed = [];
     if (r){
         var old_keys = Object.keys(r[0]);
+        old_keys.splice(old_keys.indexOf('id'), 1);
+        old_keys.splice(old_keys.indexOf('time'), 1);
+        old_keys.splice(old_keys.indexOf('userid'), 1);
+        old_keys.splice(old_keys.indexOf('ip'), 1);
+        old_keys.splice(old_keys.indexOf('course'), 1);
+        old_keys.splice(old_keys.indexOf('module'), 1);
+        old_keys.splice(old_keys.indexOf('cmid'), 1);
+        old_keys.splice(old_keys.indexOf('action'), 1);
+        old_keys.splice(old_keys.indexOf('url'), 1);
+        old_keys.splice(old_keys.indexOf('info'), 1);
         old_keys.map(function(row) {
             if (
                 row.indexOf('name') != -1 ||
@@ -93,24 +103,31 @@ function validate_record(r, k, ln){
                 row.indexOf('subject') != -1 || 
                 row.indexOf('reference') != -1  
             ) {
-
-                var old_value = r[0][row];
-                var match_value = r[1][row];
+                let old_value = r[0][row];
+                let match_value = r[1][row];
                 checks++;
                 checks_available.push(row);
                 if (row.indexOf('username') != -1) {
-                    var email_str = row.replace('username', 'email');
+                    let email_str = row.replace('username', 'email');
                     if(old_value == match_value || r[0][email_str] == r[1][email_str]) {
                         checks_passed.push(row);
                         passed++;
                     }
                 } else {
-                    if(old_value.indexOf('lang="es_es"') != -1) {
-                        old_value = old_value.replace('lang="es_es"', 'lang="es"');
-                    }
                     if(old_value == match_value ) {                        
                         checks_passed.push(row);
                         passed++;
+                    } else {                        
+                        if(typeof old_value == 'string' && old_value.indexOf('lang="es_es"') != -1) {
+                            old_value = old_value.replace('lang="es_es"', 'lang="es"');
+                        }
+                        if(typeof old_value == 'string' && old_value.indexOf('MSF e-Campus') != -1) {
+                            old_value = old_value.replace('MSF e-Campus', 'MSF E-Campus');
+                        }
+                        if(old_value == match_value ) {                        
+                            checks_passed.push(row);
+                            passed++;
+                        }
                     }
                 }
             }            

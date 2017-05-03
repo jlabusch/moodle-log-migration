@@ -59,8 +59,9 @@ var library = {
                 'FROM mdl_log log ' +
                 'JOIN mdl_user u on u.id = log.userid ' +
                 'JOIN mdl_course c ON c.id = log.course ' +
-                'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
-                'LEFT JOIN mdl_resource r on r.id = log.info AND r.id = cm.instance ' +
+                'JOIN mdl_course_modules cm on cm.id = log.cmid AND cm.module = ' +
+                    "   (SELECT id from mdl_modules where name = 'resource') " +
+                'JOIN mdl_resource r on r.id = log.info AND r.id = cm.instance ' +
                 "WHERE log.module = 'resource' AND log.action = 'update' AND " + restrict_clause,
         
         sql_match:  (row) => {
@@ -70,14 +71,15 @@ var library = {
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_course c ' +
-                'LEFT JOIN mdl_resource r ON r.course = c.id ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
-                'LEFT JOIN mdl_course_modules cm ON cm.course = c.id AND cm.module = ' +
+                'JOIN mdl_resource r ON r.course = c.id AND r.name = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance = r.id AND cm.course = c.id AND cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'resource') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
                     row["email"],
+                    row["resource_name"],
                     row["course_shortname"]
                 ]
             )
@@ -91,11 +93,6 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cmid);
-
-            var updated_cm = (match_row.cmid != null) ? match_row.cmid : "course module "+ old_row.cmid +" not found";
-
-            var updated_info = (old_row.resource_id != null && old_row.resource_name == match_row.resource_name) ? match_row.resource_id : "resource "+old_row.info+" not found";
-
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -105,10 +102,10 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                updated_cm,
+                                match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + updated_info + "'"
+                                "'" + match_row.resource_id + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
