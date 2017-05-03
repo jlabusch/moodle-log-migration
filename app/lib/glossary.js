@@ -107,7 +107,7 @@ var library = {
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, cm.instance AS module_instance, ' +
                 '       gc.id AS categoryid, gc.name AS category_name, ' +
-                '       g.id AS glossaryid, g.name AS glossary_name, ' +
+                '       g.id AS glossaryid, g.name AS glossary_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -378,7 +378,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.entryid + "'"
+                                "'" +"old database id: " + old_row.info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);

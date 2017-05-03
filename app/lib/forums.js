@@ -321,7 +321,7 @@ var library = {
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       d.id as did, d.name as discussion_name, ' +
-                '       p.id AS postid, p.subject AS postsubject, ' +      
+                '       p.id AS postid, p.subject AS post_subject, ' +      
                 '       f.name AS forum_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -364,7 +364,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.postsubject + "'"
+                                "'" + match_row.post_subject + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);

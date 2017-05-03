@@ -208,7 +208,7 @@ var library = {
                 return mysql.format(
                     'SELECT c.id AS course, c.shortname AS course_shortname,  ' +
                     '       u.id AS userid, u.username, u.email, ' +
-                    '       u2.id AS targetid, u2.username AS target_username, u2.email AS target_email, ' +
+                    '       u2.id AS targetid, u2.username AS target_username, u2.email AS target_email ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                     'LEFT JOIN mdl_user u2 ON (u2.username = ? OR u2.email = ? ) ' +
@@ -226,7 +226,7 @@ var library = {
                     return mysql.format(
                         'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                         '       u.id AS userid, u.username, u.email, ' +
-                        '       t.id AS tagid, t.name AS tag_name,  ' +
+                        '       t.id AS tagid, t.name AS tag_name  ' +
                         'FROM mdl_course c ' +
                         'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                         'LEFT JOIN mdl_tag t ON t.name = ? ' +
