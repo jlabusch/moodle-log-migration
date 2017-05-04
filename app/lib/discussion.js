@@ -43,7 +43,7 @@ var library = {
                 'JOIN mdl_forum f ON f.course = c.id AND BINARY f.name = ? ' +
                 'JOIN mdl_forum_discussions d ON d.course = c.id AND d.forum = f.id AND BINARY d.name = ? ' +
                 'JOIN mdl_course_modules cm ON cm.instance = f.id AND cm.course = c.id and cm.module = ' +
-                "   (SELECT id from mdl_modules where name = 'discussion') " +
+                "   (SELECT id from mdl_modules where name = 'forum') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
