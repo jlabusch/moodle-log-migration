@@ -97,6 +97,7 @@ function validate_record(r, k, ln){
         old_keys.splice(old_keys.indexOf('info'), 1);
         old_keys.map(function(row) {
             if (
+                row.indexOf('email') != -1 ||
                 row.indexOf('name') != -1 ||
                 row.indexOf('created') != -1 ||
                 row.indexOf('title') != -1 ||
@@ -107,12 +108,15 @@ function validate_record(r, k, ln){
                 let match_value = r[1][row];
                 checks++;
                 checks_available.push(row);
-                if(old_value.indexOf('MSF e-Campus') != -1) {
-                    old_value = old_value.replace('MSF e-Campus', 'MSF E-Campus');
-                }
                 if (row.indexOf('username') != -1) {
                     let email_str = row.replace('username', 'email');
                     if(old_value == match_value || r[0][email_str] == r[1][email_str]) {
+                        checks_passed.push(row);
+                        passed++;
+                    }
+                } else if (row.indexOf('email') != -1) {
+                    let username_str = row.replace('email', 'username');
+                    if(old_value == match_value || r[0][username_str] == r[1][username_str]) {
                         checks_passed.push(row);
                         passed++;
                     }
