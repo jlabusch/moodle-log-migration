@@ -6,9 +6,9 @@ var restrict_clause = require('./sql_restrictions.js')(),
 var library = {
     "add": {
         //The data structure has 'label_id' in the 'info' column. (same as chat module -> add action)
-        sql_old:    'SELECT log.*, l.id AS label_id, ' +
+        sql_old:    'SELECT log.*, ' +
                 '       u.username, u.email, ' +
-                '       l.name AS label_name, ' +
+                '       l.name AS label_name, l.timemodified, ' +
                 '       c.shortname AS course_shortname ' +
                 'FROM mdl_log log ' +
                 'JOIN mdl_user u on u.id = log.userid ' +
@@ -24,16 +24,17 @@ var library = {
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_course c ' +
-                'LEFT JOIN mdl_label l ON l.course = c.id ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
+                'JOIN mdl_label l ON (l.name = ?  OR l.timemodified = ?) AND l.course = c.id ' + 
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'label') " +
-                'WHERE c.shortname = ? AND l.name = ?',
+                'WHERE c.shortname = ? ',
                 [
                     row["username"],
                     row["email"],
-                    row["course_shortname"],
-                    row["label_name"]
+                    row["label_name"],
+                    row["timemodified"],
+                    row["course_shortname"]
                 ]
             )
         },

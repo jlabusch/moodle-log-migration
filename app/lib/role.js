@@ -1,3 +1,31 @@
+/*
+
+Roles have been heavily changed
+
+| Old Name               | Old Shortname         | New Shortname       |
++------------------------+-----------------------+---------------------+
+| Manager                | manager               | msfsitemanager      | -- assumed msfsitemanager, there is also a msflearningmanager
++------------------------+-----------------------+---------------------+
+| Instructional Designer | instructionaldesigner | msfeditingteacher   |
++------------------------+-----------------------+---------------------+
+| Subject Matter Expert  | subjectmatterexpert   | subjectmatterexpert | -- not changed
++------------------------+-----------------------+---------------------+
+| Tutor                  | tutor                 | msftutor            |
++------------------------+-----------------------+---------------------+
+| Student                | student               | msfstudent          |
++------------------------+-----------------------+---------------------+
+| Guest                  | guest                 | msfguest            |
++------------------------+-----------------------+---------------------+
+| Authenticated user     | user                  | msfuser             |
++------------------------+-----------------------+---------------------+
+| Teacher                | teachereditor         | msfeditingteacher   |
++------------------------+-----------------------+---------------------+
+| Observer               | obs                   | obs                 | -- not changed
++------------------------+-----------------------+---------------------+
+| LockProfile            | lockprofile           |                     | -- not existing
++------------------------+-----------------------+---------------------+
+
+*/
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
@@ -24,25 +52,25 @@ var library = {
                 'FROM mdl_log log ' +
                 'JOIN mdl_user u on u.id = log.userid ' +
                 'JOIN mdl_course c ON c.id = log.course ' +
-                'JOIN mdl_role r ON r.id = SUBSTRING(log.url, (LOCATE("&roleid=",log.url) + 8),1) ' +
-                'JOIN `mdl_context` cx ON cx.id = SUBSTRING(log.url, (LOCATE("?contextid=",log.url) + 11),4) ' +
+                'JOIN mdl_role r ON r.id = SUBSTRING(log.url, (LOCATE("&roleid=",log.url) + 8)) ' +
+                'JOIN mdl_context cx ON cx.id = REPLACE(SUBSTRING(log.url, (LOCATE("?contextid=",log.url) + 11)) , SUBSTRING(log.url, (LOCATE("&roleid=",log.url))), "") '+
                 "WHERE log.module = 'role' AND log.action = 'assign' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.id AS role_id, r.name AS role_name, ' + 
+                '       r.id AS role_id, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cx.id AS context_id ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_context cx ON cx.instanceid = c.id AND cx.contextlevel = 50 ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
-                "JOIN mdl_role r ON r.shortname = ? " +
+                "LEFT JOIN mdl_role r ON r.shortname like ?  " +
+                "JOIN mdl_context cx ON cx.instanceid = c.id AND cx.contextlevel = '50' " +
                 "WHERE c.shortname = ? ",
                 [
                     row["username"],
                     row["email"],
-                    row["role_shortname"],
+                    (row["role_shortname"] == 'instructionaldesigner' || row["role_shortname"] == 'teachereditor') ? 'msfeditingteacher' : "%" + row["role_shortname"],
                     row["course_shortname"]
                 ]
             )
@@ -55,9 +83,14 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                    .replace(/\?contextid=\d+/, '?contextid=' + match_row.context_id)
-                                    .replace(/\&roleid=\d+/, '&roleid=' + match_row.role_id);
+            var updated_url = old_row.url.replace(/\?contextid=\d+/, '?contextid=' + match_row.context_id);
+            var updated_info = old_row.info;
+            if(match_row.role_id != null) {
+                updated_url = updated_url.replace(/\&roleid=\d+/, '&roleid=' + match_row.role_id);
+                updated_info = match_row.role_name;
+            } else {
+                updated_url = updated_url + "#role_id_not_migrated";
+            }
 
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
@@ -68,10 +101,10 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                match_row.cmid,
+                                old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.role_name + "'"
+                                "'" + updated_info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -92,22 +125,22 @@ var library = {
                 'FROM mdl_log log ' +
                 'JOIN mdl_user u on u.id = log.userid ' +
                 'JOIN mdl_course c ON c.id = log.course ' +
-                'JOIN mdl_role r ON r.id = SUBSTRING(log.url, (LOCATE("&roleid=",log.url) + 8),1) ' +
+                'JOIN mdl_role r ON r.id = SUBSTRING(log.url, (LOCATE("&roleid=",log.url) + 8)) ' +
                 "WHERE log.module = 'role' AND log.action = 'edit' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.id AS role_id, r.name AS role_name, ' + 
+                '       r.id AS role_id, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
-                "JOIN mdl_role r ON r.shortname = ? " +
+                "LEFT JOIN mdl_role r ON r.shortname like ? " +
                 "WHERE c.shortname = ? ",
                 [
                     row["username"],
                     row["email"],
-                    row["role_shortname"],
+                    (row["role_shortname"] == 'instructionaldesigner' || row["role_shortname"] == 'teachereditor') ? 'msfeditingteacher' : "%" + row["role_shortname"],
                     row["course_shortname"]
                 ]
             )
@@ -120,8 +153,14 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                    .replace(/\&roleid=\d+/, '&roleid=' + match_row.role_id);
+            var updated_url = old_row.url;
+            var updated_info = old_row.info;
+            if(match_row.role_id != null) {
+                updated_url = updated_url.replace(/\&roleid=\d+/, '&roleid=' + match_row.role_id);
+                updated_info = match_row.role_name;
+            } else {
+                updated_url = updated_url + "#role_id_not_migrated";
+            }
 
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
@@ -132,10 +171,10 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                match_row.cmid,
+                                old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.role_name + "'"
+                                "'" + updated_info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -159,22 +198,22 @@ var library = {
         'FROM mdl_log log ' +
         'JOIN mdl_user u on u.id = log.userid ' +
         'JOIN mdl_course c ON c.id = log.course ' +
-        'JOIN mdl_role r ON r.name = log.info ' +
+        'LEFT JOIN mdl_role r ON r.name = log.info ' +
         "WHERE log.module = 'role' AND log.action = 'add' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.name AS role_name, ' + 
+                '       r.name AS role_name, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
-                "JOIN mdl_role r ON r.shortname = ? " +
+                "LEFT JOIN mdl_role r ON r.shortname like ? " +
                 "WHERE c.shortname = ? ",
                 [
                     row["username"],
                     row["email"],
-                    row["role_shortname"],
+                    (row["role_shortname"] == 'instructionaldesigner' || row["role_shortname"] == 'teachereditor') ? 'msfeditingteacher' : "%" + row["role_shortname"],
                     row["course_shortname"]
                 ]
             )
@@ -196,10 +235,10 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                match_row.cmid,
+                                old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + old_row.url + "'",
-                                "'" + match_row.role_name + "'"
+                                "'" + match_row.role_id == null ? old_row.info : match_row.role_name + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -207,12 +246,15 @@ var library = {
     },
     "edit allow override": {
         // 1 mdl_log row, no cm.id, no context.id, no role.id, no role.name
+        alias: () => { make_alias(library, 'edit allow override', 'add') }
     },
     "edit allow assign": {
         // 2 mdl_log rows, no cm.id, no context.id, no role.id, no role.name
+        alias: () => { make_alias(library, 'edit allow assign', 'add') }        
     },
     "edit allow switch": {
         // 4 mdl_log rows, no cm.id, no context.id, no role.id, no role.name
+        alias: () => { make_alias(library, 'edit allow switch', 'add') }
     },
 };
 

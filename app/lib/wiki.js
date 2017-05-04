@@ -24,7 +24,7 @@ var library = {
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_course c ' +
-                'LEFT JOIN mdl_wiki w ON w.course = c.id ' +
+                'JOIN mdl_wiki w ON w.course = c.id ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ? ) ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'wiki') " +
@@ -162,7 +162,7 @@ var library = {
     },
     "view":{
         //This query is similar to the one from the "add page" action except not all 'info' columns have mdl_wiki_page.id (some have the cmid). So I gave up the "ON wp.id = log.info".
-        sql_old:    'SELECT log.*, ' +
+        sql_old:    'SELECT log.*, (log.cmid = log.info) AS cmid_info, ' +
                 '       u.username, u.email, ' +
                 '       w.name AS wiki_name, ' +
                 '       wp.id AS wiki_page_id, wp.title AS wiki_page_title, ' +
@@ -213,7 +213,10 @@ var library = {
             var updated_url = old_row.url
                                     .replace(/\?id=\d+/, '?id=' + match_row.cmid)
                                     .replace(/\?pageid=\d+/, '?pageid=' + match_row.wiki_page_id);
-
+            var updated_info = match_row.wiki_page_id;
+            if (old_row.cmid_info == 1) {
+                updated_info = match_row.cmid;
+            }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -226,7 +229,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.wiki_page_id + "'"
+                                "'" + updated_info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -240,7 +243,7 @@ var library = {
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
             'JOIN mdl_course c ON c.id = log.course ' +
-            "WHERE log.module = 'label' AND log.action = 'view all' AND " + restrict_clause,
+            "WHERE log.module = 'wiki' AND log.action = 'view all' AND " + restrict_clause,
     
         sql_match:  (row) => {
             return mysql.format(

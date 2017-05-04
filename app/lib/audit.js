@@ -120,6 +120,16 @@ function validate_record(r, k, ln){
                         checks_passed.push(row);
                         passed++;
                     }
+                } else if (row.indexOf('role_shortname') != -1) {
+                    if(
+                        old_value == match_value ||
+                        ("msf" + old_value) == match_value ||
+                        ("msfsite" + old_value) == match_value ||
+                        (old_value == 'instructionaldesigner' || old_value == 'teachereditor') && match_value == 'msfeditingteacher'
+                    ) {
+                        checks_passed.push(row);
+                        passed++;
+                    }
                 } else {
                     if(old_value == match_value ) {                        
                         checks_passed.push(row);
@@ -130,6 +140,9 @@ function validate_record(r, k, ln){
                         }
                         if(typeof old_value == 'string' && old_value.indexOf('MSF e-Campus') != -1) {
                             old_value = old_value.replace('MSF e-Campus', 'MSF E-Campus');
+                        }
+                        if(typeof old_value == 'string') {
+                            old_value = old_value.replace(/\r/g, "");
                         }
                         if(old_value == match_value ) {                        
                             checks_passed.push(row);

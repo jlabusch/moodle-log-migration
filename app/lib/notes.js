@@ -66,7 +66,7 @@ var library = {
             if(match_row.post_id != null) {
                 updated_url = updated_url.replace(/#note-\d+/, '#note-' + match_row.post_id);
             } else {
-                updated_url = updated_url + "#notes_missing";
+                updated_url = updated_url + "#notes_id_not_migrated";
             }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
@@ -145,7 +145,7 @@ var library = {
                 updated_url = updated_url.replace(/&user=\d+/, '&user=' + match_row.target_userid);
             } else {
                 if(match_row.target_userid != 0) {
-                    updated_url = updated_url + "#missing_user";
+                    updated_url = updated_url + "#user_id_not_migrated";
                 }
             }
             var output ='INSERT INTO mdl_log ' +
