@@ -662,29 +662,29 @@ var library = {
                     "WHERE log.module = 'scorm' AND log.action = 'view' AND " + restrict_clause,
 
         sql_match:  (row) => {
-            return  mysql.format(
-                        'SELECT c.id AS course, c.shortname AS course_shortname, ' +
-                        '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference, ' +      
-                        '       o.id AS sco_id, o.title AS sco_title, o.identifier AS sco_identifier, ' +
-                        '       cm.id AS cmid, ' +
-                        '       u.id AS userid, u.username, u.email  ' +
-                        'FROM mdl_course c ' +
-                        'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
-                        'JOIN mdl_scorm s ON s.name = ? AND s.reference = ? ' +
-                        'JOIN mdl_course_modules cm ON cm.instance=s.id AND cm.course=c.id and cm.module = ' +
-                        "   (SELECT id from mdl_modules where name = 'scorm') " +                        
-                        'LEFT JOIN mdl_scorm_scoes o ON o.scorm = s.id AND (o.title = ? OR o.identifier = ?)  ' +
-                        'WHERE c.shortname = ?',
-                        [
-                            row["username"],
-                            row["email"],
-                            row["scorm_name"],
-                            row["scorm_reference"],
-                            row["sco_title"],
-                            row["sco_identifier"],
-                            row["course_shortname"]
-                        ]
-                    );
+            return mysql.format(
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference, ' +      
+                '       o.id AS sco_id, o.title AS sco_title, o.identifier AS sco_identifier, ' +
+                '       cm.id AS cmid, ' +
+                '       u.id AS userid, u.username, u.email  ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_scorm s ON s.name = ? AND s.reference = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance=s.id AND cm.course=c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'scorm') " +                        
+                'LEFT JOIN mdl_scorm_scoes o ON o.scorm = s.id AND (o.title = ? OR o.identifier = ?)  ' +
+                'WHERE c.shortname = ?',
+                [
+                    row["username"],
+                    row["email"],
+                    row["scorm_name"],
+                    row["scorm_reference"],
+                    row["sco_title"],
+                    row["sco_identifier"],
+                    row["course_shortname"]
+                ]
+            );
         },
 
         fixer: function(log_row, old_matches, new_matches){
