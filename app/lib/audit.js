@@ -38,6 +38,7 @@ logger.prototype.flush = function(i){
     }
     while (ok && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
+        file_sql.write(format_sql_record(this.records[i]));
         var valid = validate_record(this.records[i], this.key, i);        
         if(valid) {
             this.validated_records++;
@@ -73,6 +74,14 @@ function format_record(r){
         s = Object.keys(r[0]).map((i) => { return r[0][i] }).join('\t') + '\t' +
             Object.keys(r[1]).map((i) => { return r[1][i] }).join('\t') + '\t' +
             r[2] + '\n';
+    }
+    return s;
+}
+
+function format_sql_record(r){
+    var s = '';
+    if (r){
+        s = r[2].replace("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ", "") + "," + '\n';
     }
     return s;
 }
@@ -153,9 +162,24 @@ function validate_record(r, k, ln){
 }
 
 var logs = {},
-    file = fs.createWriteStream('/opt/data/audit_log.tsv');
+    file = fs.createWriteStream('/opt/data/audit_log.tsv'),
+    file_sql = fs.createWriteStream('/opt/data/audit_log.sql');
+
+file_sql.write("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ");//the first part of the INSERT command will be written only once, to make execution faster
 
 function audit(table, module, action){
+    fs.readFile('/opt/data/audit_log.sql', function (err,data) {//needed to add a ";"" at the end of the sql commands
+      if (err) { return console.log(err);}
+      // if(data.slice(0, -2) == ","){
+
+        var result = data.slice(0, -2) + ';';   
+        result = result.replace("VALUE;","VALUES");
+        // var a = "INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES "+result;
+        fs.writeFile('/opt/data/audit_log.sql', result, { flag: "r+"}, function (err) {
+            if (err) { return console.log(err);}
+        });
+      // }
+    });
     var key = table + '.' + module + '.' + action;
     if (!logs[key]){
         logs[key] = new logger(key);
