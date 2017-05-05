@@ -10,7 +10,7 @@ var library = {
         +--------+--------+------+-------------------------------------------+------+
         | userid | course | cmid | url                                       | info |
         +--------+--------+------+-------------------------------------------+------+
-        |   1578 |      1 |    0 | report/questioninstances/index.php?qtype= |  24  |
+        |   1578 |      1 |    0 | report/questioninstances/index.php?qtype= |      |
 
         userid --> mdl_user.id
         course --> mdl_course.id (unique shortname)

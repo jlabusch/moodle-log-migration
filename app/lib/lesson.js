@@ -93,13 +93,13 @@ var library = {
         +--------+--------+------+-----------------+------+
         | userid | course | cmid | url             | info |
         +--------+--------+------+-----------------+------+
-        |   1542 |     97 |    0 | index.php?id=97 |  97  |
+        |   1542 |     97 |    0 | index.php?id=97 |      |
 
         userid --> mdl_user.id
         course --> mdl_course.id (unique shortname)
         cmid --> 0
         url --> index.php?id=mdl_course.id 
-        info --> mdl_course.id
+        info --> 
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
