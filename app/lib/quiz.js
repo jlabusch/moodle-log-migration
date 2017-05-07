@@ -144,7 +144,7 @@ var library = {
             if(match_row.attempt_id != null){
                 updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);           
             } else {
-                updated_url = old_row.url + "#missing_attempt";
+                updated_url = old_row.url + "#attempt_id_not_migrated";
             }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
@@ -334,7 +334,7 @@ var library = {
             if(match_row.attempt_id != null){
                 updated_url = updated_url.replace(/\attempt=\d+/, 'attempt=' + match_row.attempt_id);           
             } else {
-                updated_url = updated_url + "#missing_attempt";
+                updated_url = updated_url + "#attempt_id_not_migrated";
             }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
