@@ -94,8 +94,8 @@ function format_sql_record(r){
 }
 
 function stop_sql_file(){
-        fs.readFile('/opt/data/audit_log.sql', function (err,data) {//needed to add a ";"" at the end of the sql commands
-      if (err) { return console.log(err);}
+    fs.readFile('/opt/data/audit_log.sql', function (err,data) {//needed to add a ";"" at the end of the sql commands
+        if (err) { return console.log(err);}
         var result = data.slice(0, -2) + ';';   
         fs.writeFile('/opt/data/audit_log.sql', result, { flag: "r+"}, function (err) {
             if (err) { return console.log(err);}
