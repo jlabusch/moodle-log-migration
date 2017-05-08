@@ -7,6 +7,7 @@ function logger(key){
     this.records = [];
     this.validated_records = 0;
     this.needs_header = true;
+    this.needs_sql_intro = true;
 }
 
 logger.prototype.append = function(row, match, result){
@@ -28,6 +29,7 @@ logger.prototype.flush = function(i){
         return;
     }
     var ok = true;
+    var sql_ok = true;
     i = i || 0;
     if (this.needs_header){
         ok = file.write(
@@ -36,9 +38,13 @@ logger.prototype.flush = function(i){
         );
         this.needs_header = false;
     }
-    while (ok && i < this.records.length){
+    if (this.needs_sql_intro){
+        sql_ok = file_sql.write("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ");
+        this.needs_sql_intro = false;
+    }
+    while (ok && sql_ok && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
-        file_sql.write(format_sql_record(this.records[i]));
+        sql_ok = file_sql.write(format_sql_record(this.records[i]));
         var valid = validate_record(this.records[i], this.key, i);        
         if(valid) {
             this.validated_records++;
@@ -55,6 +61,7 @@ logger.prototype.flush = function(i){
         console.log('audit validation: ' + this.key + ' => validation complete => ' + this.validated_records + ' valid lines');
         this.validated_records = 0;
         delete this.records;
+        stop_sql_file();
     }
 }
 
@@ -84,6 +91,16 @@ function format_sql_record(r){
         s = r[2].replace("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ", "") + "," + '\n';
     }
     return s;
+}
+
+function stop_sql_file(){
+        fs.readFile('/opt/data/audit_log.sql', function (err,data) {//needed to add a ";"" at the end of the sql commands
+      if (err) { return console.log(err);}
+        var result = data.slice(0, -2) + ';';   
+        fs.writeFile('/opt/data/audit_log.sql', result, { flag: "r+"}, function (err) {
+            if (err) { return console.log(err);}
+        });
+    });
 }
 
 function validate_record(r, k, ln){
@@ -165,21 +182,8 @@ var logs = {},
     file = fs.createWriteStream('/opt/data/audit_log.tsv'),
     file_sql = fs.createWriteStream('/opt/data/audit_log.sql');
 
-file_sql.write("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ");//the first part of the INSERT command will be written only once, to make execution faster
-
 function audit(table, module, action){
-    fs.readFile('/opt/data/audit_log.sql', function (err,data) {//needed to add a ";"" at the end of the sql commands
-      if (err) { return console.log(err);}
-      // if(data.slice(0, -2) == ","){
 
-        var result = data.slice(0, -2) + ';';   
-        result = result.replace("VALUE;","VALUES");
-        // var a = "INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES "+result;
-        fs.writeFile('/opt/data/audit_log.sql', result, { flag: "r+"}, function (err) {
-            if (err) { return console.log(err);}
-        });
-      // }
-    });
     var key = table + '.' + module + '.' + action;
     if (!logs[key]){
         logs[key] = new logger(key);
