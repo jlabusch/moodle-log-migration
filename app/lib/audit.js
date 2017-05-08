@@ -7,7 +7,6 @@ function logger(key){
     this.records = [];
     this.validated_records = 0;
     this.needs_header = true;
-    this.needs_sql_intro = true;
 }
 
 logger.prototype.append = function(row, match, result){
@@ -36,11 +35,8 @@ logger.prototype.flush = function(i){
             this.key + '\n' +
             format_headings(this.records[0])
         );
-        this.needs_header = false;
-    }
-    if (this.needs_sql_intro){
         sql_ok = file_sql.write("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ");
-        this.needs_sql_intro = false;
+        this.needs_header = false;
     }
     while (ok && sql_ok && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
