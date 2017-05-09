@@ -6,7 +6,6 @@ var restrict_clause = require('./sql_restrictions.js')(),
 var library = {
     "add": {
         /*
-
         +--------+--------+------+-----------------+------+
         | userid | course | cmid | url             | info |
         +--------+--------+------+-----------------+------+
@@ -17,7 +16,6 @@ var library = {
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> view.php?id=mdl_course_modules.id 
         info --> mdl_glossary.id & mdl_course_modules.instance 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -32,10 +30,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       g.id AS glossaryid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance,  ' +
+                '       g.id AS glossaryid, g.name AS glossary_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -58,8 +56,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -80,7 +77,6 @@ var library = {
     },
     "add category": {        
         /*
-
         +--------+--------+--------+-----------------------------+-------+
         | userid | course |  cmid  | url                         | info  |
         +--------+--------+--------+-----------------------------+-------+
@@ -91,7 +87,6 @@ var library = {
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> editcategories.php?id=mdl_course_modules.id 
         info --> mdl_glossary_category.id 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -108,10 +103,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       gc.id AS categoryid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       gc.id AS categoryid, gc.name AS category_name, ' +
+                '       g.id AS glossaryid, g.name AS glossary_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -136,8 +132,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -158,7 +153,6 @@ var library = {
     },
     "add comment": {                
         /*
-
         +--------+--------+--------+---------------------------+------+
         | userid | course | cmid | url                         | info |
         +--------+--------+--------+---------------------------+------+
@@ -171,13 +165,11 @@ var library = {
                           |             |_______ = mdl_glossary_entries.id
                           |_____________________ = mdl_course_module.id
         info --> comments count
-
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
-                    '       g.name AS glossary_name, ' +
+                    '       g.id AS glossary_id, g.name AS glossary_name, ' +
                     '       ge.timecreated AS entry_time ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
@@ -189,10 +181,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       ge.id AS entryid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       g.id AS glossaryid, g.name AS glossary_name, ' +
+                '       ge.id AS entryid, ge.timecreated AS entry_time  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -240,7 +233,6 @@ var library = {
     },
     "add entry": {      
         /*
-
         +--------+--------+------+------------------------------------+-------+
         | userid | course | cmid | url                                | info  |
         +--------+--------+--------+----------------------------------+-------+
@@ -253,7 +245,6 @@ var library = {
                           |                 |_______ = mdl_glossary_entries.id
                           |_________________________ = mdl_course_module.id
         info --> mdl_glossary_entries.id 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -270,10 +261,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       ge.id AS entryid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       g.id as glossaryid, g.name AS glossary_name, ' +
+                '       ge.id AS entryid, ge.timecreated AS entry_time  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -321,7 +313,6 @@ var library = {
     },
     "delete entry": {       
         /*
-
         +--------+--------+------+------------------------------------+-------+
         | userid | course | cmid | url                                | info  |
         +--------+--------+--------+----------------------------------+-------+
@@ -334,7 +325,6 @@ var library = {
                           |                 |_______ = mdl_glossary_entries.id
                           |_________________________ = mdl_course_module.id
         info --> mdl_glossary_entries.id 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -349,9 +339,10 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid ' +
+                '       g.id as glossaryid, g.name AS glossary_name, ' +
+                '       cm.id AS cmid, cm.instance AS module_instance ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -374,8 +365,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.cmid);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -388,7 +378,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.entryid + "'"
+                                "'" +"old database id: " + old_row.info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -419,7 +409,6 @@ var library = {
         url --> index.php?id=18
                             |________= mdl_course.id
         info --> empty
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -431,7 +420,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -451,8 +440,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -472,9 +460,7 @@ var library = {
         }
     },
     "view entry": {
-
         /*
-
         +--------+--------+--------+-----------------------+-------+
         | userid | course |   cmid | url                   | info  |
         +--------+--------+--------+-----------------------+-------+
@@ -486,7 +472,6 @@ var library = {
         url --> showentry.php?eid=721
                                    |_______ = mdl_glossary_entries.id
         info --> mdl_glossary_entries.id 
-
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
@@ -503,10 +488,11 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
-                '       cm.id AS cmid, ' +
-                '       ge.id AS entryid ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       g.id AS glossaryid, g.name AS glossary_name, ' +
+                '       ge.id AS entryid, ge.timecreated AS entry_time  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_glossary g ON g.course = c.id AND BINARY g.name = ? ' +
@@ -531,8 +517,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url
-                                .replace(/eid=\d+/, 'eid=' + match_row.entryid);
+            var updated_url = old_row.url.replace(/eid=\d+/, 'eid=' + match_row.entryid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +

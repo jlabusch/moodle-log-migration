@@ -3,7 +3,9 @@ exports.make_alias = function(library, this_action, from_action){
     Object.keys(library[from_action]).forEach((x) => {
         if (library[this_action][x] === undefined){
             if (x === 'sql_old'){
-                library[this_action][x] = library[from_action][x].replace(new RegExp(from_action), this_action);
+                // changed to match only whole words, 
+                // used to match 'mdl_quiz_attempts'  and change it to 'mdl_quiz_close attempts' for from_action == 'attempt' and this_action = 'close attempt'
+                library[this_action][x] = library[from_action][x].replace(new RegExp("\\b"+from_action), this_action);
             }else{
                 library[this_action][x] = library[from_action][x]
             }

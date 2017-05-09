@@ -51,7 +51,7 @@ var library = {
         +--------+-----------------------------+-------------------+
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.email, u.username, ' +
+                    '       u.username, u.email, ' +
                     '       cm.instance AS module_instance, ' +
                     '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
                     '       c.shortname AS course_shortname ' +
@@ -64,17 +64,18 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference, ' + 
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
                 'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["scorm_name"],
                     row["scorm_reference"],
@@ -85,7 +86,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -172,7 +173,7 @@ var library = {
         +-----------+-------------+------------+------------+-----------------+
         */
         sql_old:    'SELECT log.*, ' +
-                    '       u.email, u.username, ' +
+                    '       u.username, u.email, ' +
                     '       cm.instance AS module_instance, ' +
                     '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
                     '       c.shortname AS course_shortname, ' +
@@ -188,19 +189,20 @@ var library = {
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
+                '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, ' +
                 '       ct.id AS context_id '+
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?)  ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
                 'JOIN mdl_context ct on ct.contextlevel = 70 AND ct.instanceid = cm.id ' +
                 'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["scorm_name"],
                     row["scorm_reference"],
@@ -211,7 +213,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -249,7 +251,7 @@ var library = {
                 mdl_course.id  |                               |        |
                       mdl_course_modules.id                    |        |
                                             mdl_course_modules.id       |
-                                                                        ?
+                                                                        mdl_user.id (different from log.userid when log.userid is 2 [adminmsf])
         ========
          PASS 1
         ========
@@ -284,31 +286,38 @@ var library = {
         */
         // alias: () => { make_alias(library, 'delete attempts', 'launch') }
         sql_old:    'SELECT log.*, ' +
-            '       u.email, u.username, ' +
+            '       u.username AS author_username, u.email AS author_email, ' +
+            '       u1.username AS target_username, u1.email AS target_email, ' +
             '       cm.instance AS module_instance, ' +
             '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
             '       c.shortname AS course_shortname ' +
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
+            'JOIN mdl_user u1 on u1.id = REPLACE(log.info, SUBSTRING(log.info FROM LOCATE(":",log.info)), "") ' +
             'JOIN mdl_course c ON c.id = log.course ' +
             'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
             'JOIN mdl_scorm s on s.id = cm.instance ' +
-            "WHERE log.module = 'scorm' AND log.action = 'launch' AND " + restrict_clause,
+            "WHERE log.module = 'scorm' AND log.action = 'delete attempts' AND " + restrict_clause,
         
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       s.id AS scorm_id, ' + 
-                '       u.id AS userid, u.username, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
+                '       u1.id AS author_userid, u1.username AS author_username, u1.email AS author_email, ' +
+                '       u2.id AS target_userid, u2.username AS target_username, u2.email AS target_email, ' +
                 '       cm.id AS cmid ' +
                 'FROM mdl_scorm s ' +
                 'JOIN mdl_course c ON c.id=s.course ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u1 ON (u1.username = ? OR u1.email = ?) ' +
+                'JOIN mdl_user u2 ON (u2.username = ? OR u2.email = ?)  ' +
                 'JOIN mdl_course_modules cm ON cm.course = c.id AND cm.instance = s.id and cm.module = ' +
                     "   (SELECT id from mdl_modules where name = 'scorm') " +
-                'WHERE s.name = ? AND s.reference=? AND c.shortname = ?',
+                'WHERE s.name = ? AND s.reference = ? AND c.shortname = ?',
                 [
-                    row["email"],
+                    row["author_username"],
+                    row["author_email"],
+                    row["target_username"],
+                    row["target_email"],
                     row["scorm_name"],
                     row["scorm_reference"],
                     row["course_shortname"]
@@ -316,28 +325,30 @@ var library = {
             )
         },
 
-        fixer: function(log_row, old_matches, new_matches){
+        fixer: function(log_row, old_matches, new_matches){        
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.author_username === nm.author_username || lr.author_email === nm.author_email) &&
+                       (lr.target_username === nm.target_username || lr.target_email === nm.target_email);
             });
         },
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url
                                 .replace(/\?id=\d+/, '?id=' + match_row.cmid);
+            var updated_info = old_row.info.replace(/\d+:/, match_row.target_userid + ":");
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
                             [
                                 old_row.time,
-                                match_row.userid,
+                                match_row.author_userid,
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + old_row.info + "'"
+                                "'" + updated_info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -414,7 +425,7 @@ var library = {
     "userreport": {
         alias: () => { make_alias(library, 'userreport', 'add') }
     },
-    "view": {
+    "view_1": {
         /*
         This case has to do two-pass matching to extract the scoid from the url and
         then query mdl_scorm_scoers:
@@ -537,11 +548,11 @@ var library = {
         sql_match:  (row) => {
             return row.sco_title ?
                     mysql.format(
-                        'SELECT c.id AS course, ' +
+                        'SELECT c.id AS course, c.shortname AS course_shortname ' +
                         '       o.id AS sco_id, o.title AS sco_title, o.identifier AS sco_identifier, ' +
-                        '       s.id AS scorm_id, ' + 
+                        '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference,' + 
                         '       cm.id AS cmid, ' +
-                        '       u.id AS userid, u.username ' +
+                        '       u.id AS userid, u.username, u.email ' +
                         'FROM mdl_scorm_scoes o ' +
                         'JOIN mdl_scorm s ON s.id = o.scorm ' +
                         'JOIN mdl_course c ON c.id=s.course ' +
@@ -619,6 +630,93 @@ var library = {
 
 
     },
+    "view": {
+        /*
+        This case has to do two-pass matching to extract the scoid from the url and
+        then query mdl_scorm_scoers:
+
+        | userid | course |  cmid | url                             | info |
+        +--------+--------+-------+---------------------------------+------+
+        |      2 |     18 |   315 | player.php?id=315&scoid=26      | 13   |
+        |   3118 |    274 | 24161 | player.php?cm=24161&scoid=9879  | 2216 |
+             |         |       |                               |        |
+        mdl_user.id    |       |                               |        |
+                mdl_course.id  |                               |        |
+                      mdl_course_modules.id                    |        |
+                                                    mdl_scorm_scoes.id  |
+                                                                    mdl_scorm.id
+        */
+        sql_old:    'SELECT log.*, ' +
+                    '       u.email, u.username, ' +
+                    '       s.name AS scorm_name, s.reference AS scorm_reference, ' +
+                    '       o.id AS sco_id, ' +
+                    '       o.identifier AS sco_identifier, ' +
+                    '       o.title AS sco_title, ' +
+                    '       c.shortname AS course_shortname ' +
+                    'FROM mdl_log log ' +
+                    'JOIN mdl_user u ON u.id = log.userid ' +
+                    'JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
+                    'JOIN mdl_scorm s ON s.id = cm.instance ' +                
+                    'LEFT JOIN mdl_scorm_scoes o ON o.id = SUBSTRING(log.url FROM (CASE WHEN LOCATE("&scoid", log.url) > 0 THEN (LOCATE("&scoid=", log.url) + 7) ELSE 0 END)) ' + 
+                    'JOIN mdl_course c ON c.id = log.course ' +
+                    "WHERE log.module = 'scorm' AND log.action = 'view' AND " + restrict_clause,
+
+        sql_match:  (row) => {
+            return mysql.format(
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       s.id AS scorm_id, s.name AS scorm_name, s.reference AS scorm_reference, ' +      
+                '       o.id AS sco_id, o.title AS sco_title, o.identifier AS sco_identifier, ' +
+                '       cm.id AS cmid, ' +
+                '       u.id AS userid, u.username, u.email  ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_scorm s ON s.name = ? AND s.reference = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance=s.id AND cm.course=c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'scorm') " +                        
+                'LEFT JOIN mdl_scorm_scoes o ON o.scorm = s.id AND (o.title = ? OR o.identifier = ?)  ' +
+                'WHERE c.shortname = ?',
+                [
+                    row["username"],
+                    row["email"],
+                    row["scorm_name"],
+                    row["scorm_reference"],
+                    row["sco_title"],
+                    row["sco_identifier"],
+                    row["course_shortname"]
+                ]
+            );
+        },
+
+        fixer: function(log_row, old_matches, new_matches){
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.username === nm.username || lr.email === nm.email);
+            });
+        },
+
+        fn: function(old_row, match_row, next){
+            match_row.sco_id = match_row.sco_id || '';
+            var updated_url = old_row.url
+                                .replace(/\?id=\d+/, '?id=' + match_row.cmid)
+                                .replace(/cm=\d+/, 'cm=' + match_row.cmid)
+                                .replace(/scoid=\d+/, 'scoid=' + match_row.sco_id);
+            var output ='INSERT INTO mdl_log ' +
+                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                        '(' +
+                            [
+                                old_row.time,
+                                match_row.userid,
+                                "'" + old_row.ip + "'",
+                                match_row.course,
+                                "'" + old_row.module + "'",
+                                match_row.cmid,
+                                "'" + old_row.action + "'",
+                                "'" + updated_url + "'",
+                                "'" + match_row.scorm_id + "'"
+                            ].join(',') +
+                        ')';
+            next && next(null, output);
+        }
+    },
     "view all": {
         /*
         Same as the add action, this case has to do only one-pass matching because the url contains just the mdl_course.id 
@@ -634,7 +732,7 @@ var library = {
                                                         mdl_course.id                              
         */
         sql_old:    'SELECT log.*, ' +
-            '       u.email, u.username, ' +
+            '       u.username, u.email, ' +
             '       c.shortname AS course_shortname ' +
             'FROM mdl_log log ' +
             'JOIN mdl_user u on u.id = log.userid ' +
@@ -643,12 +741,13 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
-                '       u.id AS userid, u.username ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
-                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
                 'WHERE c.shortname = ?',
                 [
+                    row["username"],
                     row["email"],
                     row["course_shortname"]
                 ]
@@ -657,7 +756,7 @@ var library = {
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return lr.username === nm.username;
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
@@ -676,7 +775,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.course + "'"
+                                "'" + old_row.info + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);

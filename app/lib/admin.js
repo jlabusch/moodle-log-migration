@@ -10,7 +10,7 @@ var library = {
         +--------+--------+------+-------------------------------------------+------+
         | userid | course | cmid | url                                       | info |
         +--------+--------+------+-------------------------------------------+------+
-        |   1578 |      1 |    0 | report/questioninstances/index.php?qtype= |  24  |
+        |   1578 |      1 |    0 | report/questioninstances/index.php?qtype= |      |
 
         userid --> mdl_user.id
         course --> mdl_course.id (unique shortname)
@@ -29,7 +29,7 @@ var library = {
 
         sql_match:  (row) => {
             return mysql.format(
-                'SELECT c.id AS course, ' +
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +

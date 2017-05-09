@@ -1,4 +1,5 @@
 var restrict_clause = require('./sql_restrictions.js')(),
+    make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
     mysql = require('mysql');
 
@@ -12,56 +13,48 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+--------+------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'add'" +
-                "AND " + restrict_clause,
+        sql_old:    'SELECT log.*, ' +
+                    'c.shortname AS course_shortname, ' +
+                    'u.username, u.email, ' +
+                    'q.name AS quiz_name ' +
+                    'FROM mdl_log log ' +
+                    'JOIN mdl_user u ON u.id = log.userid ' +
+                    'JOIN mdl_course c ON c.id = log.course ' +
+                    'JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
+                    'JOIN mdl_quiz q ON q.id = cm.instance AND q.id = log.info ' +
+                    "WHERE log.module = 'quiz' AND log.action = 'add' AND " + restrict_clause,
 
         sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
+            return mysql.format(
+                'SELECT cm.id AS cmid, '+
+                'c.id AS course, c.shortname AS course_shortname, '+
+                'q.id AS quiz_id, q.name AS quiz_name, ' +
+                'u.id AS userid, u.username, u.email ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_quiz q ON q.name = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance = q.id AND cm.course = c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'quiz') " +
+                'WHERE c.shortname = ? ',
+                [
+                    row["username"],
+                    row["email"],
+                    row["quiz_name"],
+                    row["course_shortname"]
+                ]
+            );
         },
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
         fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -81,7 +74,7 @@ var library = {
         }
     },
 
-    "addcategory": undefined,
+    "addcategory": {
         /*
         +---------+------------+--------+----------------+--------+--------+-------+-------------+-------------------+------+
         | id      | time       | userid | ip             | course | module | cmid  | action      | url               | info |
@@ -90,13 +83,10 @@ var library = {
         +---------+------------+--------+----------------+--------+--------+-------+-------------+-------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
-
-        OLD_DB returns 1 result for quiz/addcategory.
-        We do not query this as course ID does not match quiz course ID, and course module does not exist either.
         */
-
+        alias: () => { make_alias(library, 'addcategory', 'add') }
+    },
     "attempt": {
         /*
         | userid | course | cmid | url                   | info |
@@ -109,58 +99,53 @@ var library = {
                              `- mdl_course_modules.id       v
                                   `-> mdl_course_modules.instance == mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'attempt' " +
-                "AND " + restrict_clause,
+        sql_old:    'SELECT log.*, ' +
+                    'c.shortname AS course_shortname, ' +
+                    'u.username, u.email, ' +
+                    'q.name AS quiz_name ' +
+                    'FROM mdl_log log ' +
+                    'JOIN mdl_user u ON u.id = log.userid ' +
+                    'JOIN mdl_course c ON c.id = log.course ' +
+                    'JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
+                    'JOIN mdl_quiz q ON q.id = cm.instance AND q.id = log.info ' +
+                    "WHERE log.module = 'quiz' AND log.action = 'attempt' AND " + restrict_clause,
 
         sql_match: (row) => {
-            return row.attempt_id ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
+            return mysql.format(
+                'SELECT cm.id AS cmid, '+
+                'c.id AS course, c.shortname AS course_shortname, '+
+                'q.id AS quiz_id, q.name AS quiz_name, ' +
+                'u.id AS userid, u.username, u.email, ' +
+                'qa.id AS attempt_id ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_quiz q ON q.name = ? ' +                
+                'LEFT JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
+                'JOIN mdl_course_modules cm ON cm.instance = q.id AND cm.course = c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'quiz') " +
+                'WHERE c.shortname = ? ',
+                [
+                    row["username"],
+                    row["email"],
+                    row["quiz_name"],
+                    row["course_shortname"]
+                ]
+            );
         },
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
-
         fn: function(old_row, match_row, next){
-            match_row.att_id = match_row.att_id || '';
-            var updated_url = old_row.url
-                                .replace(/\?attempt=\d+/, '?attempt=' + match_row.att_id);
+            var updated_url;
+            if(match_row.attempt_id != null){
+                updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);           
+            } else {
+                updated_url = old_row.url + "#attempt_id_not_migrated";
+            }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -189,78 +174,9 @@ var library = {
         +--------+------------+--------+----------------+--------+--------+------+---------------+-----------------------+------+
 
         url: attempt => mdl_quiz_attempts.id
-
         info => mdl_quiz.id
-
-        Missing matches might be caused by missing attempts records.
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'close attempt' " +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.attempt_id ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'close attempt', 'attempt') }
     },
 
     "continue attemp":{
@@ -272,78 +188,9 @@ var library = {
         +--------+------------+--------+-------------+--------+--------+------+-----------------+-----------------------+------+
 
         url: attempt => mdl_quiz_attempts.id
-
         info => mdl_quiz.id
-
-        Missing matches might be caused by missing attempts records.
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'continue attemp' " +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.attempt_id ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'continue attemp', 'attempt') }
     },
 
     "continue attempt":{
@@ -355,78 +202,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+-------+------------------+------------------------+------+
 
         url: attempt => mdl_quiz_attempts.id
-
         info => mdl_quiz.id
-
-        Missing matches might be caused by missing attempts records.
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'continue attempt' " +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.attempt_id ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'continue attempt', 'attempt') }
     },
 
     "delete attempt":{
@@ -438,73 +216,9 @@ var library = {
         +---------+------------+--------+----------------+--------+--------+-------+----------------+---------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'add'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'delete attempt', 'add') }
     },
 
     "editquestions":{
@@ -516,73 +230,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+---------------+------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'add'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'editquestions', 'add') }
     },
 
     "manualgrade":{
@@ -593,96 +243,10 @@ var library = {
         | 1611006 | 1400598829 |    943 | 83.39.117.248 |    244 | quiz   | 18669 | manualgrade | comment.php?attempt=1068&slot=14 | 172  |
         +---------+------------+--------+---------------+--------+--------+-------+-------------+----------------------------------+------+
 
-        url: attempt => mdl_quiz_attempts.id, slot => what slot the question is in given attempt
-
+        url: attempt => mdl_quiz_attempts.id, slot => not an ID, int() indicating the "order" of the questions, what slot the question is in given attempt
         info => mdl_quiz.id
-
-        mdl_log.userid -> mdl_user.id
-        mdl_log.course -> mdl.course.id
-        mdl_log.cmid   -> mdl_course_modules.id
-        mdl_log.info   -> mdl_quiz.id
-
-        url:attempt                -> mdl_quiz_attempts.id
-        mdl_quiz_attempts.uniqueid -> mdl_question_usages.id
-        mdl_question_usages.id     -> mdl_question_attempts.questionusageid
-
-        mdl_question_attempts.questionid -> mdl_quiz_slots.questionid
-
-        // url:slot                   -> mdl_question_attempt.slot
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON c.id = log.course ' +
-                'LEFT JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
-                'LEFT JOIN mdl_quiz q ON q.id = cm.instance ' +
-                'JOIN mdl_user u ON u.id = log.userid ' +
-                'JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
-                'JOIN mdl_question_attempts qea ON qea.questionusageid = qa.uniqueid ' +
-                'JOIN mdl_quiz_slots qs ON qs.questionid = qea.questionid AND qs.quizid = q.id ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'manualgrade' " +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return mysql.format(
-                'SELECT qa.id AS attempt_id, qs.slot AS slot, ' +
-                'u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_quiz_attempts qa ' +
-                'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                'JOIN mdl_course c ON c.id = q.course ' +
-                'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                'JOIN mdl_question_attempts qea ON qea.questionusageid = qa.uniqueid ' +
-                'JOIN mdl_quiz_slots qs ON qs.questionid = qea.questionid AND qs.quizid = q.id ' +
-                'JOIN mdl_modules m ON m.id = cm.module ' +
-                'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                [
-                    row["u_email"],
-                    row["u_username"],
-                    'quiz',
-                    row["course_shortname"],
-                    row["quiz_name"]
-                ]
-            );
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.attempt_id = match_row.attempt_id || '';
-            match_row.slot = match_row.slot || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id)
-                                         .replace(/\?slot=\d+/, '?slot=' + match_row.slot);
-
-
-            match_row.cm_id = match_row.cm_id || '';
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'manualgrade', 'attempt') }        
     },
 
     "preview":{
@@ -694,73 +258,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+---------+---------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'preview'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'preview', 'add') }
     },
 
     "report":{
@@ -772,73 +272,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+--------+--------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'report'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'report', 'add') }
     },
 
     "review":{
@@ -849,72 +285,67 @@ var library = {
         | 458047 | 1322985803 |    135 | 79.180.116.172 |     49 | quiz   | 1371 | review | review.php?id=1371&attempt=53 | 20   |
         +--------+------------+--------+----------------+--------+--------+------+--------+-------------------------------+------+
 
-        url: id => mdl_course_modules.id, attempt =>
-
+        url: id => mdl_course_modules.id, attempt => mdl_quiz_attempts.id
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'review' " +
-                "AND " + restrict_clause,
+        sql_old:    'SELECT log.*, ' +
+                    'c.shortname AS course_shortname, ' +
+                    'u.username, u.email, ' +
+                    'q.name AS quiz_name ' +
+                    'FROM mdl_log log ' +
+                    'JOIN mdl_user u ON u.id = log.userid ' +
+                    'JOIN mdl_course c ON c.id = log.course ' +
+                    'JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
+                    'JOIN mdl_quiz q ON q.id = cm.instance AND q.id = log.info ' +
+                    'JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
+                    "WHERE log.module = 'quiz' AND log.action = 'review' AND " + restrict_clause,
 
         sql_match: (row) => {
             return mysql.format(
-                'SELECT cm.id AS cm_id, ' +
-                'qa.id AS quiz_attempt_id, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, ' +
-                'cm.id AS cm_id ' +
-                'FROM mdl_course_modules cm ' +
-                'JOIN mdl_course c ON c.id = cm.course ' +
-                'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                'JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
-                'JOIN mdl_modules m ON m.id = cm.module ' +
-                'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
+                'SELECT cm.id AS cmid, '+
+                'c.id AS course, c.shortname AS course_shortname, '+
+                'q.id AS quiz_id, q.name AS quiz_name, ' +
+                'u.id AS userid, u.username, u.email, ' +
+                'qa.id AS attempt_id ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_quiz q ON q.name = ? ' +                
+                'LEFT JOIN mdl_quiz_attempts qa ON qa.quiz = q.id AND qa.userid = u.id ' +
+                'JOIN mdl_course_modules cm ON cm.instance = q.id AND cm.course = c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'quiz') " +
+                'WHERE c.shortname = ? ',
                 [
-                    row["u_email"],
-                    row["u_username"],
-                    'quiz',
-                    row["course_shortname"],
+                    row["username"],
+                    row["email"],
                     row["quiz_name"],
+                    row["course_shortname"]
                 ]
             );
         },
 
         fixer: function(log_row, old_matches, new_matches){
             return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+                return (lr.username === nm.username || lr.email === nm.email);
             });
         },
 
         fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            match_row.quiz_attempt_id = match_row.quiz_attempt_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id)
-                                         .replace(/\?attempt=\d+/, '?attempt=' + match_row.quiz_attempt_id);
+            var updated_url = old_row.url.replace(/\id=\d+/, 'id=' + match_row.cmid)
+            if(match_row.attempt_id != null){
+                updated_url = updated_url.replace(/\attempt=\d+/, 'attempt=' + match_row.attempt_id);           
+            } else {
+                updated_url = updated_url + "#attempt_id_not_migrated";
+            }
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
                             [
                                 old_row.time,
-                                match_row.u_id,
+                                match_row.userid,
                                 "' " + old_row.ip + "'",
-                                match_row.course_id,
+                                match_row.course,
                                 "' " + old_row.module + "'",
-                                match_row.cm_id,
+                                match_row.cmid,
                                 "' " + old_row.action + "'",
                                 "' " + updated_url + "'",
                                 "' " + match_row.quiz_id + "'"
@@ -933,73 +364,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+--------+------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'update'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'update', 'add') }
     },
 
     "view":{
@@ -1011,76 +378,12 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+--------+------------------+------+
 
         url: id => mdl_course_modules.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'quiz'" +
-                "AND log.action = 'view'" +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.cm_id ?
-                mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_course_modules cm ' +
-                    'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                    'JOIN mdl_quiz q ON q.id = cm.instance ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"],
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.cm_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'view', 'add') }
     },
 
-    "view all": undefined,
+    "view all": {
         /*
         +--------+------------+--------+---------------+--------+--------+------+----------+-----------------+------+
         | id     | time       | userid | ip            | course | module | cmid | action   | url             | info |
@@ -1089,12 +392,56 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+------+----------+-----------------+------+
 
         url: id => mdl_course.id
-
-        info => N/A
-
-        We do not run this query as there is no course module and quiz data.
         */
+        sql_old:    'SELECT log.*, ' +
+                    '       u.username, u.email, ' +
+                    '       c.shortname AS course_shortname ' +
+                    'FROM mdl_log log ' +
+                    'JOIN mdl_user u ON u.id = log.userid ' +
+                    'JOIN mdl_course c ON c.id = log.course ' +
+                    "WHERE log.module = 'quiz' AND log.action = 'view all' AND " + restrict_clause,
 
+        sql_match:  (row) => {
+            return mysql.format(
+                'SELECT c.id AS course, c.shortname AS course_shortname, ' +
+                '       u.id AS userid, u.username, u.email ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'WHERE c.shortname = ? ',
+                [
+                    row["username"],
+                    row["email"],
+                    row["course_shortname"]
+                ]
+            );
+        },
+
+        fixer: function(log_row, old_matches, new_matches){
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.username === nm.username || lr.email === nm.email);
+            });
+        },
+
+        fn: function(old_row, match_row, next){
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
+            var output ='INSERT INTO mdl_log ' +
+                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                        '(' +
+                            [
+                                old_row.time,
+                                match_row.userid,
+                                "'" + old_row.ip + "'",
+                                match_row.course,
+                                "'" + old_row.module + "'",
+                                old_row.cmid,
+                                "'" + old_row.action + "'",
+                                "'" + updated_url + "'",
+                                "'" + old_row.info + "'"
+                            ].join(',') +
+                        ')';
+            next && next(null, output);
+        }
+    },
     "view summary":{
         /*
         +--------+------------+--------+---------------+--------+--------+-------+--------------+-------------------------+------+
@@ -1104,76 +451,9 @@ var library = {
         +--------+------------+--------+---------------+--------+--------+-------+--------------+-------------------------+------+
 
         url: attempt => mdl_quiz_attempts.id
-
         info => mdl_quiz.id
         */
-        sql_old:
-            'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'cm.id AS cm_id, cm.module AS module_id, cm.section AS section, cm.instance AS quiz_id, ' +
-                'q.name AS quiz_name, ' +
-                'qa.id AS attempt_id ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'LEFT JOIN mdl_course_modules cm ON log.cmid = cm.id ' +
-                'LEFT JOIN mdl_quiz q ON cm.instance = q.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_quiz_attempts qa ON q.id = qa.quiz AND log.userid = qa.userid ' +
-                "WHERE log.module = 'quiz' " +
-                "AND log.action = 'view summary' " +
-                "AND " + restrict_clause,
-
-        sql_match: (row) => {
-            return row.attempt_id ?
-                mysql.format(
-                    'SELECT qa.id AS attempt_id, ' +
-                    'u.username AS u_username, u.email AS u_email ' +
-                    'FROM mdl_quiz_attempts qa ' +
-                    'JOIN mdl_quiz q ON q.id = qa.quiz ' +
-                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                    'JOIN mdl_course c ON c.id = q.course ' +
-                    'JOIN mdl_course_modules cm ON cm.course = c.id ' +
-                    'JOIN mdl_modules m ON m.id = cm.module ' +
-                    'WHERE m.name = ? AND c.shortname = ? AND q.name = ?',
-                    [
-                        row["u_email"],
-                        row["u_username"],
-                        'quiz',
-                        row["course_shortname"],
-                        row["quiz_name"]
-                    ]
-                )
-                :
-                null;
-        },
-
-        fixer: function(log_row, old_matches, new_matches){
-            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
-                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
-            });
-        },
-
-        fn: function(old_row, match_row, next){
-            match_row.cm_id = match_row.cm_id || '';
-            var updated_url = old_row.url.replace(/\?attempt=\d+/, '?attempt=' + match_row.attempt_id);
-            var output ='INSERT INTO mdl_log ' +
-                        '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                        '(' +
-                            [
-                                old_row.time,
-                                match_row.userid,
-                                "' " + old_row.ip + "'",
-                                match_row.course,
-                                "' " + old_row.module + "'",
-                                match_row.cmid,
-                                "' " + old_row.action + "'",
-                                "' " + updated_url + "'",
-                                "' " + match_row.quiz_id + "'"
-                            ].join(',') +
-                        ')';
-            next && next(null, output);
-        }
+        alias: () => { make_alias(library, 'view summary', 'attempt') }
     }
 };
 

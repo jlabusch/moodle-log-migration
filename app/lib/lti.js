@@ -7,45 +7,44 @@ var library = {
     "add": {
         /*
 
-        +--------+--------+------+-----------------+------+
-        | userid | course | cmid | url             | info |
-        +--------+--------+------+-----------------+------+
-        |     48 |     18 |  304 | view.php?id=304 |  24  |
+        +--------+--------+-------+-------------------+------+
+        | userid | course | cmid  | url               | info |
+        +--------+--------+-------+-------------------+------+
+        | 355    | 110    | 13233 | view.php?id=13233 | 1    |
 
         userid --> mdl_user.id
         course --> mdl_course.id (unique shortname)
         cmid --> mdl_course_modules.id (unique course,module,instance)
         url --> view.php?id=mdl_course_modules.id 
-        info --> mdl_feedback.id & mdl_course_modules.instance 
-
+        info --> mdl_lti.id & mdl_course_modules.instance 
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
                     '       c.shortname AS course_shortname, ' +
-                    '       f.name AS feedback_name ' +
+                    '       l.name AS lti_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
-                    'JOIN mdl_course_modules cm on cm.id = log.cmid ' +
-                    'JOIN mdl_feedback f ON f.id = cm.instance and f.course = log.course ' +
-                    "WHERE log.module = 'feedback' AND log.action = 'add' AND " + restrict_clause,
+                    'JOIN mdl_course_modules cm ON cm.id = log.cmid ' +
+                    'JOIN mdl_lti l ON l.id = cm.instance AND l.course = c.id AND l.id = log.info ' +
+                    "WHERE log.module = 'lti' AND log.action = 'add' AND " + restrict_clause,
 
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname, ' +
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cm.id AS cmid, cm.instance AS module_instance, ' +
-                '       f.id AS feedbackid, f.name AS feedback_name ' +
+                '       l.id AS ltiid, l.name AS lti_name ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
-                'JOIN mdl_feedback f ON f.course = c.id AND BINARY f.name = ? ' +
-                'JOIN mdl_course_modules cm ON cm.instance = f.id AND cm.course = c.id and cm.module = ' +
-                "   (SELECT id from mdl_modules where name = 'feedback') " +
+                'JOIN mdl_lti l ON l.course = c.id AND BINARY l.name = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance = l.id AND cm.course = c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'lti') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
                     row["email"],
-                    row["feedback_name"],
+                    row["lti_name"],
                     row["course_shortname"]
                 ]
             );
@@ -71,60 +70,52 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.feedbackid + "'"
+                                "'" + match_row.ltiid + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
         }
     },
-    "delete": { 
-        alias: () => { make_alias(library, 'delete', 'add') }
-    },
-    "startcomplete": { 
-        alias: () => { make_alias(library, 'startcomplete', 'add') }
-    },
-    "submit": { 
-        alias: () => { make_alias(library, 'submit', 'add') }
-    },
-    "update": {
-        alias: () => { make_alias(library, 'update', 'add') }
-    },
-    "view": {
-        alias: () => { make_alias(library, 'view', 'add') }
-    },
-    "view all": { 
+    "launch": {
         /*
-
-        +--------+--------+------+-----------------+------+
-        | userid | course | cmid | url             | info |
-        +--------+--------+------+-----------------+------+
-        |   1542 |     97 |    0 | index.php?id=97 |  97  |
+        +--------+--------+------+-------------------+------+
+        | userid | course | cmid | url               | info |
+        +--------+--------+------+-------------------+------+
+        | 355    | 110    | 0    | view.php?id=13233 | 1    |
 
         userid --> mdl_user.id
         course --> mdl_course.id (unique shortname)
-        cmid --> 0
-        url --> index.php?id=mdl_course.id 
-        info --> mdl_course.id
-
+        cmid --> mdl_course_modules.id (unique course,module,instance)
+        url --> view.php?id=mdl_course_modules.id 
+        info --> mdl_lti.id & mdl_course_modules.instance 
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
-                    '       c.shortname AS course_shortname ' +
+                    '       c.shortname AS course_shortname, ' +
+                    '       l.name AS lti_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
-                    "WHERE log.module = 'feedback' AND log.action = 'view all' AND " + restrict_clause,
+                    'JOIN mdl_lti l ON l.course = c.id AND l.id = log.info ' +
+                    'JOIN mdl_course_modules cm ON cm.instance = l.id AND  cm.course = c.id AND cm.id = SUBSTRING(log.url FROM LOCATE("id=", log.url) + 3) ' +
+                    "WHERE log.module = 'lti' AND log.action = 'launch' AND " + restrict_clause,
 
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname, ' +
-                '       u.id AS userid, u.username, u.email ' +
+                '       u.id AS userid, u.username, u.email, ' +
+                '       cm.id AS cmid, cm.instance AS module_instance, ' +
+                '       l.id AS ltiid, l.name AS lti_name  ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_lti l ON l.course = c.id AND BINARY l.name = ? ' +
+                'JOIN mdl_course_modules cm ON cm.instance = l.id AND cm.course = c.id and cm.module = ' +
+                "   (SELECT id from mdl_modules where name = 'lti') " +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
                     row["email"],
+                    row["lti_name"],
                     row["course_shortname"]
                 ]
             );
@@ -137,7 +128,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.cmid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -147,14 +138,20 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                old_row.cmid,
+                                match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.course + "'"
+                                "'" + match_row.ltiid + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
         }
+    },
+    "update": {
+        alias: () => { make_alias(library, 'update', 'add') }
+    },
+    "view": {
+        alias: () => { make_alias(library, 'view', 'launch') }
     }
 }
 

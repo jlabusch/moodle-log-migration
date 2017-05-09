@@ -3,39 +3,42 @@ var restrict_clause = require('./sql_restrictions.js')(),
     mysql = require('mysql');
 
 var library = {
-    "mailer": {
+    "update": {
         /*
-        +--------+--------+------+---------------------------------------------------+-----------------------------------------------------+
-        | userid | course | cmid | url                                               | info                                                |
-        +--------+--------+------+---------------------------------------------------+-----------------------------------------------------+
-        |     48 |      1 |   0  | http://ecampus.msf.org/moodlemsf/course/enrol.php |  ERROR: SMTP Error: Could not connect to SMTP host. |
+        +--------+--------+-------+------------------+--------------+
+        | userid | course | cmid  | url              | info         |
+        +--------+--------+-------+------------------+--------------+
+        | 1298   | 1      | 0     | index.php?id=365 | instalations |
 
         userid --> mdl_user.id
-        course --> mdl_course.id (unique shortname) [always 1]
-        cmid -->  always 0
-        url --> empty [20185 rows]
-        url --> 'cron' [8602 rows]
-        url -->  different urls [1212 rows] 890 with ids
-        info --> different error messages
+        course --> mdl_course.id (unique shortname)
+        cmid --> mdl_course_modules.id (unique course,module,instance)
+        url --> index.php?id=365 -- mdl_tag.id 
+        info --> 'instalations' -- mdl_tag.name
         */
         sql_old:    'SELECT log.*, ' +
                     '       u.username, u.email, ' +
-                    '       c.shortname AS course_shortname ' +
+                    '       c.shortname AS course_shortname, ' +
+                    '       t.name AS tag_name ' +
                     'FROM mdl_log log ' +
                     'JOIN mdl_user u ON u.id = log.userid ' +
                     'JOIN mdl_course c ON c.id = log.course ' +
-                    "WHERE log.module = 'library' AND log.action = 'mailer' AND " + restrict_clause,
+                    'JOIN mdl_tag t ON t.id = SUBSTRING(log.url FROM LOCATE("id=", log.url) + 3) ' +
+                    "WHERE log.module = 'tag' AND log.action = 'update' AND " + restrict_clause,
 
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname, ' +
-                '       u.id AS userid, u.username, u.email ' +
+                '       u.id AS userid, u.username, u.email, ' +
+                '       t.id AS tagid, t.name as tagname ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
+                'JOIN mdl_tag t ON t.userid = u.id AND BINARY t.name = ? ' +
                 'WHERE c.shortname = ?',
                 [
                     row["username"],
                     row["email"],
+                    row["tag_name"],
                     row["course_shortname"]
                 ]
             );
@@ -48,13 +51,7 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
-            var updated_url;
-            if (old_row.url.indexOf('id=') !== -1) {
-                updated_url = old_row.url + '#id_not_migrated';
-            } else {
-                updated_url = old_row.url;
-            }
-
+            var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.tagid);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -67,7 +64,7 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + old_row.info + "'"
+                                "'" + match_row.tagname + "'"
                             ].join(',') +
                         ')';
             next && next(null, output);
