@@ -30,12 +30,12 @@ logger.prototype.flush = function(i){
     var ok = true;
     var sql_ok = true;
     i = i || 0;
-    if (this.needs_header){
+    if (this.needs_header && this.records.length > 0){
         ok = file.write(
             this.key + '\n' +
             format_headings(this.records[0])
         );
-        sql_ok = file_sql.write("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ");
+        sql_ok = file_sql.write(this.records[0][2].replace(/VALUES.*/, 'VALUES '));
         this.needs_header = false;
     }
     while (ok && sql_ok && i < this.records.length){
@@ -84,7 +84,7 @@ function format_record(r){
 function format_sql_record(r){
     var s = '';
     if (r){
-        s = r[2].replace("INSERT INTO mdl_log (time,userid,ip,course,module,cmid,action,url,info) VALUES ", "") + "," + '\n';
+        s = r[2].replace(/INSERT .* VALUES /, "") + "," + '\n';
     }
     return s;
 }
