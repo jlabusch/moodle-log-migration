@@ -23,19 +23,15 @@ function format_attr_all(table, fields){
     return format_attr(table, fields) + `, 'AND' AS __${table}_operator`;
 }
 
-function additional_clause(table, operator){
-    let a = defining_attributes(table),
-        checks = [];
-    a.forEach((x) => {
-        let ref = x.match(/(.*):(.*)/);
-        if (ref){
-            checks.push(`mdl_${table}.${ref[1]} = ${ref[2]}`);
+function select_and_split_attr(table, x){
+    let result = [];
+    defining_attributes(table).forEach((attr) => {
+        let parts = attr.split(':');
+        if (parts[0] === x){
+            result = parts;
         }
     });
-    if (checks.length < 1){
-        return '';
-    }
-    return ' AND (' + checks.join(operator || ' AND ') + ')';
+    return result;
 }
 
 // Columns that can uniquely identify a table during sql_match()
@@ -135,7 +131,6 @@ module.exports = function(module, action){
                     WHERE mdl_${row.objecttable}.id=${row.objectid}
                 `.replace(/\s+/g, ' ');
             }
-            //console.log(sql);
             return sql;
         },
 
@@ -158,14 +153,34 @@ module.exports = function(module, action){
                         // Given row.__foo_field_0 = 'email', add field "mdl_foo.email AS __foo_value_0"
                         // (Mainly for debugging)
                         fields.push(`mdl_${m[1]}.${row[x]} AS ${val}`);
-                        // Given for.__foo_field_0 = 'email and row.__foo_value_0 = 'a@b.c',
-                        // add join/where clause "mdl_foo.email = 'a@b.c'"
-                        if (m[1] === row.objecttable){
-                            where_clause.push(`mdl_${m[1]}.${row[x]} = ?`);
-                            where_subs.push(row[val]);
+
+                        let parts = select_and_split_attr(m[1], row[x]),
+                            clause = undefined,
+                            have_sub = false;
+                        if (parts.length === 1){
+                            // Given defining_attributes('foo') => ["email"],
+                            // you will have foo.__foo_field_0 = 'email' and row.__foo_value_0 = 'a@b.c',
+                            // so add join/where clause "mdl_foo.email = 'a@b.c'"
+                            clause = `mdl_${m[1]}.${row[x]} = ?`;
+                            have_sub = true;
+                        }else if (parts.length === 2){
+                            // Given defining_attributes('foo') => ["course:c.id"],
+                            // you're linking against a reference in the new table rather than a static value,
+                            // so add join/where clause "mdl_foo.course = c.id"
+                            clause = `mdl_${m[1]}.${row[x]} = ${parts[1]}`;
                         }else{
-                            join_clause.push(`mdl_${m[1]}.${row[x]} = ?`);
-                            join_subs.push(row[val]);
+                            throw new Error(m[1] + '.' + row[x] + ' is and is not a defining attribute.');
+                        }
+                        if (m[1] === row.objecttable){
+                            where_clause.push(clause);
+                            if (have_sub){
+                                where_subs.push(row[val]);
+                            }
+                        }else{
+                            join_clause.push(clause);
+                            if (have_sub){
+                                join_subs.push(row[val]);
+                            }
                         }
                         return;
                     }
@@ -198,8 +213,8 @@ module.exports = function(module, action){
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
                         AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_${row.__linked} ON
-                        (${join_clause.join(` ${join_op} `)}) ${additional_clause(row.__linked)}
-                    WHERE ${where_clause.join(` ${where_op} `)} ${additional_clause(row.objecttable)}
+                        (${join_clause.join(` ${join_op} `)})
+                    WHERE ${where_clause.join(` ${where_op} `)}
                 `
             }else{
                 sql = `
@@ -218,7 +233,6 @@ module.exports = function(module, action){
                 `
             }
             let result = mysql.format(sql.replace(/\s+/g, ' '), join_subs.concat(where_subs));
-            //console.log(result);
             return result;
         },
 
