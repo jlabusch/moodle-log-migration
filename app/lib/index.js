@@ -126,7 +126,9 @@ var migration_functions = {
         __lookup: (m, a) => {
             if (a){
                 let x = migration_functions.mdl_log[m][a];
-                x.alias && x.alias();
+                if (x && x.alias){
+                    x.alias();
+                }
                 return x;
             }
             return migration_functions.mdl_log[m];
