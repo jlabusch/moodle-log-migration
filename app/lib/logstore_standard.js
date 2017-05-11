@@ -42,6 +42,26 @@ function defining_attributes(table){
         case 'quiz_attempts':   return ['userid:u.id', 'quiz:mdl_quiz.id'];
         case 'scorm_scoes':     return ['scorm:mdl_scorm.id', 'title', 'identifier'];
         case 'scorm':           return ['course:c.id', 'name', 'reference'];
+        case 'assign':              return ['course:c.id', 'name'];
+        case 'assign_grades':       return ['userid:u.id', 'assign:mdl_assign.id'];//relateduserid
+        case 'assign_submission':   return ['userid:u.id', 'assign:mdl_assign.id'];
+        case 'folder':              return ['course:c.id', 'name'];
+        case 'workshop':            return ['course:c.id', 'name'];
+        case 'url':                 return ['course:c.id', 'name'];
+        case 'simplecertificate':   return ['course:c.id', 'name', 'certificateimage', 'secondimage'];
+        case 'resource':            return ['course:c.id', 'name'];
+        case 'glossary':            return ['course:c.id', 'name'];
+        case 'glossary_entries':    return ['glossaryid:mdl_glossary.id', 'concept'];
+        case 'glossary_categories': return ['glossaryid:mdl_glossary.id', 'name'];
+        case 'forum':               return ['course:c.id', 'name','type'];
+        case 'forum_discussions':   return ['course:c.id', 'forum:mdl_forum.id', 'name'];
+        case 'lesson':              return ['course:c.id', 'name'];
+        case 'feedback':            return ['course:c.id', 'name'];
+        case 'chat':                return ['course:c.id', 'name'];
+        case 'book':                return ['course:c.id', 'name'];
+        case 'bigbluebuttonbn':     return ['course:c.id', 'name'];
+        case 'choice':              return ['course:c.id', 'name'];
+        case 'mediagallery':        return ['course:c.id', 'name', 'userid:u.id'];
     }
     return [];
 }
@@ -57,6 +77,11 @@ function linked_table(table){
         case 'quiz':            break;
         case 'page':            break;
         case 'grade_grades':    break;
+        case 'forum_discussions':   link = 'forum'; break;
+        case 'glossary_entries':    link = 'glossary'; break;
+        case 'glossary_categories': link = 'glossary'; break;
+        case 'assign_grades':       link = 'assign'; break;
+        case 'assign_submission':   link = 'assign'; break;
     }
     if (link && defining_attributes(link).length > 0){
         return link;
