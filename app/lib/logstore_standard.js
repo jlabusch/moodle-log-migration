@@ -73,11 +73,11 @@ function defining_attributes(table){
 function linked_table(table){
     let link = null;
     switch(table){
-        case 'scorm_scoes':         link = 'scorm'; break;
-        case 'quiz_attempts':       link = 'quiz'; break;
-        case 'quiz':                break;
-        case 'page':                break;
-        case 'grade_grades':        break;
+        case 'scorm_scoes':     link = 'scorm'; break;
+        case 'quiz_attempts':   link = 'quiz'; break;
+        case 'quiz':            break;
+        case 'page':            break;
+        case 'grade_grades':    break;
         case 'forum_discussions':   link = 'forum'; break;
         case 'glossary_entries':    link = 'glossary'; break;
         case 'glossary_categories': link = 'glossary'; break;
