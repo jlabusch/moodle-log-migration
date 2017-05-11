@@ -57,7 +57,6 @@ function defining_attributes(table){
         case 'forum_discussions':   return ['course:c.id', 'forum:mdl_forum.id', 'name'];
         case 'lesson':              return ['course:c.id', 'name'];
         case 'feedback':            return ['course:c.id', 'name'];
-        case 'assign':              return ['course:c.id', 'name'];
         case 'chat':                return ['course:c.id', 'name'];
         case 'book':                return ['course:c.id', 'name'];
         case 'bigbluebuttonbn':     return ['course:c.id', 'name'];
