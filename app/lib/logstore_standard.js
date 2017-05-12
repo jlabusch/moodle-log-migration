@@ -62,6 +62,9 @@ function defining_attributes(table){
         case 'bigbluebuttonbn':     return ['course:c.id', 'name'];
         case 'choice':              return ['course:c.id', 'name'];
         case 'mediagallery':        return ['course:c.id', 'name', 'userid:u.id'];
+        case 'wiki':                return ['course:c.id', 'name'];
+        case 'workshop_submissions':return ['workshopid:mdl_workshop.id', 'title', 'authorid:u.id'];//relateduserid
+        case 'mediagallery_gallery':return ['instanceid:mdl_mediagallery.id','name'];
     }
     return [];
 }
@@ -82,6 +85,8 @@ function linked_table(table){
         case 'glossary_categories': link = 'glossary'; break;
         case 'assign_grades':       link = 'assign'; break;
         case 'assign_submission':   link = 'assign'; break;
+        case 'workshop_submissions':link = 'workshop'; break;
+        case 'mediagallery_gallery':link = 'mediagallery';break;
     }
     if (link && defining_attributes(link).length > 0){
         return link;
