@@ -55,8 +55,9 @@ services:
             - ./app/.eslintrc.json:/opt/.eslintrc.json
             - ./db:/opt/data
         environment:
-            # RESTRICT_TABLES:  "mdl_logstore_standard_log"
+            RESTRICT_TABLES:  "mdl_logstore_standard_log"
             # RESTRICT_MODULES: "mdl_logstore_standard_log.mod_quiz,mdl_logstore_standard_log.mod_scorm"
+            CONCURRENT_MODULES_MAX: "4"
             # RESTRICT_ACTIONS: "mdl_logstore_standard_log.mod_quiz.submitted,mdl_logstore_standard_log.mod_scorm.launched"
             LOSSY_AUDIT: "yes"
             # DISABLE_AUDIT: "yes"

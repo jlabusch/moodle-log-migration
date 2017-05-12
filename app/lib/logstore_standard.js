@@ -37,14 +37,14 @@ function select_and_split_attr(table, x){
 // Columns that can uniquely identify a table during sql_match()
 function defining_attributes(table){
     switch(table){
-        case 'user':            return ['email', 'username'];
-        case 'quiz':            return ['name'];
-        case 'quiz_attempts':   return ['userid:u.id', 'quiz:mdl_quiz.id'];
-        case 'scorm_scoes':     return ['scorm:mdl_scorm.id', 'title', 'identifier'];
-        case 'scorm':           return ['course:c.id', 'name', 'reference'];
+        case 'user':                return ['email', 'username'];
+        case 'quiz':                return ['name'];
+        case 'quiz_attempts':       return ['userid:u.id', 'quiz:mdl_quiz.id'];
+        case 'scorm_scoes':         return ['scorm:mdl_scorm.id', 'title', 'identifier'];
+        case 'scorm':               return ['course:c.id', 'name', 'reference'];
         case 'assign':              return ['course:c.id', 'name'];
-        case 'assign_grades':       return ['userid:u.id', 'assign:mdl_assign.id'];//relateduserid
-        case 'assign_submission':   return ['userid:u.id', 'assign:mdl_assign.id'];
+        case 'assign_grades':       return ['userid:u.id', 'assignment:mdl_assign.id'];
+        case 'assign_submission':   return ['userid:u.id', 'assignment:mdl_assign.id'];
         case 'folder':              return ['course:c.id', 'name'];
         case 'workshop':            return ['course:c.id', 'name'];
         case 'url':                 return ['course:c.id', 'name'];
@@ -75,11 +75,11 @@ function defining_attributes(table){
 function linked_table(table){
     let link = null;
     switch(table){
-        case 'scorm_scoes':     link = 'scorm'; break;
-        case 'quiz_attempts':   link = 'quiz'; break;
-        case 'quiz':            break;
-        case 'page':            break;
-        case 'grade_grades':    break;
+        case 'scorm_scoes':         link = 'scorm'; break;
+        case 'quiz_attempts':       link = 'quiz'; break;
+        case 'quiz':                break;
+        case 'page':                break;
+        case 'grade_grades':        break;
         case 'forum_discussions':   link = 'forum'; break;
         case 'glossary_entries':    link = 'glossary'; break;
         case 'glossary_categories': link = 'glossary'; break;
@@ -235,7 +235,7 @@ module.exports = function(module, action){
                             mdl_${row.objecttable}.id AS object_id,
                             ${fields.join(',')}
                     FROM mdl_${row.objecttable}
-                    LEFT JOIN mdl_course c ON c.shortname='${row.course_shortname}'
+                    LEFT JOIN mdl_course c ON c.shortname=?
                     LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
                         AND u.id NOT IN (${invalid_users})
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
@@ -245,7 +245,8 @@ module.exports = function(module, action){
                     LEFT JOIN mdl_${row.__linked} ON
                         (${join_clause.join(` ${join_op} `)})
                     WHERE ${where_clause.join(` ${where_op} `)}
-                `
+                `;
+                join_subs.unshift(row.course_shortname);
             }else{
                 sql = `
                     SELECT  u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
@@ -259,8 +260,9 @@ module.exports = function(module, action){
                         AND (r.id IS NULL OR r.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
                         AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
-                    WHERE c.shortname='${row.course_shortname}'
-                `
+                    WHERE c.shortname=?
+                `;
+                where_subs.push(row.course_shortname);
             }
             let result = mysql.format(sql.replace(/\s+/g, ' '), join_subs.concat(where_subs));
             return result;

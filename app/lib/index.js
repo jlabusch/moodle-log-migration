@@ -34,7 +34,14 @@ function start_migration(){
                     if (err){
                         throw err;
                     }
-                    res.forEach(r => process_module(spec.t, r[spec.col]));
+                    res.forEach((r,i) => {
+                        setTimeout(
+                            function(){
+                                process_module(spec.t, r[spec.col]);
+                            },
+                            i*1000
+                        );
+                    });
                 }
             );
         }
@@ -50,8 +57,24 @@ function is_allowed(env, val){
     return ok;
 }
 
+function number_of_modules_in_progress(){
+    return Object.keys(stats).reduce((acc, val) => { return acc + (val.indexOf('in progress') > -1)|0 }, 0);
+}
+
 function process_module(t, m){
     let key = mk(t, m);
+    if (process.env.CONCURRENT_MODULES_MAX &&
+        number_of_modules_in_progress() > parseInt(process.env.CONCURRENT_MODULES_MAX))
+    {
+        console.log(`${key} waiting for other modules to complete...`);
+        setTimeout(
+            function(){
+                process_module(t, m);
+            },
+            5*1000
+        );
+        return;
+    }
     if (is_allowed(process.env.RESTRICT_MODULES, key) === false){
         console.log(key + ' not listed in RESTRICT_MODULES, skipping...');
         return;
