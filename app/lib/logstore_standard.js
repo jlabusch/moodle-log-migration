@@ -71,8 +71,8 @@ function defining_attributes(table){
         case 'mediagallery_item':   return ['userid:u.id', 'caption', 'timecreated'];
         case 'wiki_pages':          return ['title', 'timecreated'];
         case 'wiki_versions':       return ['content', 'timecreated'];
-        case 'cohort':              return ['idnumber', 'timecreated'];
         case 'question':            return ['name','questiontext', 'timecreated'];
+        case 'certificate':         return ['name', 'timecreated'];
     }
     return [];
 }
