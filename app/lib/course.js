@@ -1,7 +1,7 @@
 var restrict_clause = require('./sql_restrictions.js')(),
-        make_alias = require('./common.js').make_alias,
-        fix_by_match_index = require('./common.js').fix_by_match_index,
-        mysql = require('mysql');
+    make_alias = require('./common.js').make_alias,
+    fix_by_match_index = require('./common.js').fix_by_match_index,
+    mysql = require('mysql');
 
 var library = {
     'add mod': {
@@ -28,15 +28,15 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname ' +
-                'FROM mdl_log log ' +
-                'LEFT JOIN mdl_course c ON log.course = c.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'add mod' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
+            'c.id AS course_id, c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'LEFT JOIN mdl_course c ON log.course = c.id ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'add mod' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/id=(\d+)/); // Get cm_id.
@@ -55,18 +55,18 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'm.id AS module_id, m.name AS module_name, ' +
-                    'mo.id AS module_type_id, mo.name AS module_type_name ' +
-                    'FROM mdl_course_modules cm ' +
-                    "JOIN mdl_" + info_module + " m ON cm.instance = m.id " +
-                    "JOIN mdl_modules mo ON mo.name = '" + info_module + "' " +
-                    'WHERE cm.id = ? AND m.id = ?',
-                    [
-                        url_id[1],
-                        info_id[0]
-                    ]
-                    );
+                'SELECT cm.id AS cm_id, ' +
+                'm.id AS module_id, m.name AS module_name, ' +
+                'mo.id AS module_type_id, mo.name AS module_type_name ' +
+                'FROM mdl_course_modules cm ' +
+                "JOIN mdl_" + info_module + " m ON cm.instance = m.id " +
+                "JOIN mdl_modules mo ON mo.name = '" + info_module + "' " +
+                'WHERE cm.id = ? AND m.id = ?',
+                [
+                    url_id[1],
+                    info_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
@@ -74,30 +74,30 @@ var library = {
             // Escape \r\n to be able to match with new DB.
             row["module_name"] = row["module_name"].replace(/(?:\\[rn]|[\r\n]+)+/g, "");
 
-            no_tables = ["journal", "bigbluebuttonbn"];
+            var no_tables = ["journal", "bigbluebuttonbn"];
             if (no_tables.indexOf(row.module_type_name) !== -1) {
                 return null;
             } else if (row.module_type_name === 'glossary') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
-                    sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                    var sql = mysql.format(
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -106,24 +106,24 @@ var library = {
             } else if (row.module_type_name === 'scorm') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -132,24 +132,24 @@ var library = {
             } else if (row.module_type_name === 'assign') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -158,24 +158,24 @@ var library = {
             } else if (row.module_type_name === 'page') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -184,24 +184,24 @@ var library = {
             } else if (row.module_type_name === 'wiki') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -210,24 +210,24 @@ var library = {
             } else if (row.module_type_name === 'quiz') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -236,24 +236,24 @@ var library = {
             } else if (row.module_type_name === 'forum') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -262,24 +262,24 @@ var library = {
             } else if (row.module_type_name === 'label') {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"]
-                            ]
-                            );
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    );
 
                     return sql;
                 } else {
@@ -289,6 +289,33 @@ var library = {
                     (row.module_type_name === 'folder')) {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
                     sql = mysql.format(
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ? AND m.display <> ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"],
+                            0
+                        ]
+                    );
+
+                    return sql;
+                } else {
+                    return null;
+                }
+            } else {
+                return (row.cm_id && row.module_id && row.module_name && row.module_type_name) ?
+                        mysql.format(
                             'SELECT cm.id AS cm_id, ' +
                             'c.id AS course_id, ' +
                             'u.id AS u_userid, ' +
@@ -298,41 +325,15 @@ var library = {
                             'JOIN mdl_modules mo ON mo.id = cm.module ' +
                             "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
                             'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ? AND m.display <> ?',
+                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
                             [
                                 row["u_email"],
                                 row["u_username"],
                                 row["course_shortname"],
                                 row["module_type_name"],
-                                row["module_name"],
-                                0
+                                row["module_name"]
                             ]
-                            );
-                    return sql;
-                } else {
-                    return null;
-                }
-            } else {
-                return (row.cm_id && row.module_id && row.module_name && row.module_type_name) ?
-                        mysql.format(
-                                'SELECT cm.id AS cm_id, ' +
-                                'c.id AS course_id, ' +
-                                'u.id AS u_userid, ' +
-                                'm.id AS module_id ' +
-                                'FROM mdl_course_modules cm ' +
-                                'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                                'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                                "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                                'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                                [
-                                    row["u_email"],
-                                    row["u_username"],
-                                    row["course_shortname"],
-                                    row["module_type_name"],
-                                    row["module_name"]
-                                ]
-                                )
+                        )
                         :
                         null;
             }
@@ -354,20 +355,20 @@ var library = {
             var updated_info = old_row.info.replace(/\[\d]+/, match_row.module_id);
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -385,20 +386,20 @@ var library = {
         fn: function (old_row, match_row, next) {
             var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "'" + old_row.ip + "'",
-                        match_row.course,
-                        "'" + old_row.module + "'",
-                        old_row.cmid,
-                        "'" + old_row.action + "'",
-                        "'" + updated_url + "'",
-                        "'" + old_row.info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "'" + old_row.ip + "'",
+                    match_row.course,
+                    "'" + old_row.module + "'",
+                    old_row.cmid,
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + old_row.info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -469,15 +470,15 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.username AS u_username, u.email AS u_email, ' +
-                'c.shortname AS course_shortname ' +
-                'FROM mdl_log log ' +
-                'LEFT JOIN mdl_course c ON log.course = c.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'editsection' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.username AS u_username, u.email AS u_email, ' +
+            'c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'LEFT JOIN mdl_course c ON log.course = c.id ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'editsection' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/id=(\d+)/); // Get course_section id.
@@ -486,34 +487,34 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT cs.id AS cs_id, cs.section AS cs_section, cs.name AS cs_name ' +
-                    'FROM mdl_course_sections cs ' +
-                    'WHERE cs.id = ? ',
-                    [
-                        url_id[1]
-                    ]
-                    );
+                'SELECT cs.id AS cs_id, cs.section AS cs_section, cs.name AS cs_name ' +
+                'FROM mdl_course_sections cs ' +
+                'WHERE cs.id = ? ',
+                [
+                    url_id[1]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.cs_name && row.cs_section) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, ' +
-                            'cs.id AS cs_id, cs.section AS cs_section ' +
-                            'FROM mdl_course_sections cs ' +
-                            'LEFT JOIN mdl_course c ON c.id = cs.course ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND cs.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["cs_name"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, ' +
+                    'cs.id AS cs_id, cs.section AS cs_section ' +
+                    'FROM mdl_course_sections cs ' +
+                    'LEFT JOIN mdl_course c ON c.id = cs.course ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? AND cs.name = ?',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"],
+                        row["cs_name"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -532,20 +533,20 @@ var library = {
             var updated_info = (match_row.cs_section + 1);
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -558,25 +559,25 @@ var library = {
          |   3086 |     20 |    0 | ../enrol/users.php?id=20 | 20   |
          */
         sql_old: 'SELECT log.*, ' +
-                '       u.id, u.email, u.username, ' +
-                '       c.id AS course_id, c.shortname AS course_shortname ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u on u.id = log.userid ' +
-                'JOIN mdl_course c ON c.id = log.course ' +
-                "WHERE log.module = 'course' AND log.action = 'enrol' AND " + restrict_clause,
+            '       u.id, u.email, u.username, ' +
+            '       c.id AS course_id, c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u on u.id = log.userid ' +
+            'JOIN mdl_course c ON c.id = log.course ' +
+            "WHERE log.module = 'course' AND log.action = 'enrol' AND " + restrict_clause,
 
         sql_match: (row) => {
             return mysql.format(
-                    'SELECT c.id AS course, ' +
-                    '       u.id AS userid, u.email, u.username ' +
-                    'FROM mdl_course c ' +
-                    'JOIN mdl_user u ON BINARY u.email = ? ' +
-                    'WHERE c.shortname = ?',
-                    [
-                        row["email"],
-                        row["course_shortname"]
-                    ]
-                    );
+                'SELECT c.id AS course, ' +
+                '       u.id AS userid, u.email, u.username ' +
+                'FROM mdl_course c ' +
+                'JOIN mdl_user u ON BINARY u.email = ? ' +
+                'WHERE c.shortname = ?',
+                [
+                    row["email"],
+                    row["course_shortname"]
+                ]
+            );
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -588,20 +589,20 @@ var library = {
         fn: function (old_row, match_row, next) {
             var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "'" + old_row.ip + "'",
-                        match_row.course,
-                        "'" + old_row.module + "'",
-                        old_row.cmid,
-                        "'" + old_row.action + "'",
-                        "'" + updated_url + "'",
-                        "'" + match_row.course + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "'" + old_row.ip + "'",
+                    match_row.course,
+                    "'" + old_row.module + "'",
+                    old_row.cmid,
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + match_row.course + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -644,13 +645,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'new' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'new' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -658,31 +659,31 @@ var library = {
                 url_id = [null, row.url];
             }
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -701,20 +702,20 @@ var library = {
             var updated_info = match_row.course_shortname + ' (ID ' + match_row.course + ')';
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -733,20 +734,20 @@ var library = {
         fn: function (old_row, match_row, next) {
             var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "'" + old_row.ip + "'",
-                        match_row.course,
-                        "'" + old_row.module + "'",
-                        old_row.cmid,
-                        "'" + old_row.action + "'",
-                        "'" + updated_url + "'",
-                        "'" + (old_row.info ? match_row.course : '') + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "'" + old_row.ip + "'",
+                    match_row.course,
+                    "'" + old_row.module + "'",
+                    old_row.cmid,
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + (old_row.info ? match_row.course : '') + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -775,13 +776,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'report live' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'report live' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -790,31 +791,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -833,20 +834,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -875,13 +876,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'report log' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'report log' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -890,31 +891,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -933,47 +934,109 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
 
-    'report outline': undefined,
-    /*
-     mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report outline' ORDER BY id DESC LIMIT 1;
-     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
-     | id      | time       | userid | ip             | course | module | cmid | action         | url                             | info |
-     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
-     | 2156333 | 1430136438 |   1613 | 195.20.146.189 |    243 | course |    0 | report outline | report/outline/index.php?id=243 | 243  |
-     +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+    'report outline': {
+        /*
+         mysql> SELECT * FROM mdl_log WHERE module='course' AND action = 'report outline' ORDER BY id DESC LIMIT 1;
+         +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+         | id      | time       | userid | ip             | course | module | cmid | action         | url                             | info |
+         +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
+         | 2156333 | 1430136438 |   1613 | 195.20.146.189 |    243 | course |    0 | report outline | report/outline/index.php?id=243 | 243  |
+         +---------+------------+--------+----------------+--------+--------+------+----------------+---------------------------------+------+
 
-     userid => mdl_user.id
-     // course  => mdl_course.id
-     // module  => mdl_module.name
-     // cmid    => mdl_course_modules.id
-     url: id    => mdl_course.id
-     info   => course.fullname (?)
+         userid => mdl_user.id
+         course  => mdl_course.id
+         // module  => mdl_module.name
+         // cmid    => mdl_course_modules.id
+         url: id    => mdl_course.id
+         info   => course.id
 
-     mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report outline';
-     +----------+
-     | count(*) |
-     +----------+
-     |     2152 |
-     +----------+
-     */
+         mysql> SELECT count(*) FROM mdl_log WHERE module='course' AND action = 'report outline';
+         +----------+
+         | count(*) |
+         +----------+
+         |     2152 |
+         +----------+
+         */
+        sql_old:
+            'SELECT log.*, ' +
+            'u.id AS user_id, u.username AS u_username, u.email AS u_email, ' +
+            'c.id AS course_id, c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            'JOIN mdl_course c ON log.course = c.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'report outline' " +
+            "AND " + restrict_clause,
+
+        sql_match: (row) => {
+            return (row.course_shortname) ?
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
+        },
+
+        fixer: function (log_row, old_matches, new_matches) {
+            return fix_by_match_index(log_row, old_matches, new_matches, (lr, nm) => {
+                return (lr.u_username === nm.u_username || lr.u_email === nm.u_email);
+            });
+        },
+
+        fn: function (old_row, match_row, next) {
+            match_row.course = match_row.course_id || '';
+            match_row.course_shortname = match_row.course_shortname || '';
+            match_row.userid = match_row.u_userid || '';
+
+            var updated_url = old_row.url.replace(/\?id=\d+/, '?id=' + match_row.course);
+
+            var updated_info = match_row.course;
+
+            var output = 'INSERT INTO mdl_log ' +
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
+            next && next(null, output);
+        }
+    },
 
     'report participation': {
         /*
@@ -999,13 +1062,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'report participation' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'report participation' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -1014,31 +1077,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1057,20 +1120,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1105,15 +1168,15 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'c.id AS course_id, c.shortname AS course_shortname' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'report participation' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'c.id AS course_id, c.shortname AS course_shortname' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            'JOIN mdl_course c ON log.course = c.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'report participation' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -1122,31 +1185,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1165,20 +1228,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1207,13 +1270,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'unenrol' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'unenrol' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -1222,31 +1285,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+                );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1265,20 +1328,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1307,13 +1370,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'update' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'update' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -1322,31 +1385,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1365,20 +1428,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1407,15 +1470,15 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'c.id AS course_id, c.shortname AS course_shortname ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'LEFT JOIN mdl_course c ON log.course = c.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'update mod' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
+            'c.id AS course_id, c.shortname AS course_shortname ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            'LEFT JOIN mdl_course c ON log.course = c.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'update mod' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/id=(\d+)/); // Get cm_id.
@@ -1434,18 +1497,18 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT cm.id AS cm_id, ' +
-                    'm.id AS module_id, m.name AS module_name, ' +
-                    'mo.name AS module_type_name ' +
-                    'FROM mdl_course_modules cm ' +
-                    "JOIN mdl_" + info_module + " m ON cm.instance = m.id " +
-                    "JOIN mdl_modules mo ON mo.name = '" + info_module + "' " +
-                    'WHERE cm.id = ? AND m.id = ?',
-                    [
-                        url_id[1],
-                        info_id[0]
-                    ]
-                    );
+                'SELECT cm.id AS cm_id, ' +
+                'm.id AS module_id, m.name AS module_name, ' +
+                'mo.name AS module_type_name ' +
+                'FROM mdl_course_modules cm ' +
+                "JOIN mdl_" + info_module + " m ON cm.instance = m.id " +
+                "JOIN mdl_modules mo ON mo.name = '" + info_module + "' " +
+                'WHERE cm.id = ? AND m.id = ?',
+                [
+                    url_id[1],
+                    info_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
@@ -1458,53 +1521,54 @@ var library = {
             } else if ((row.module_type_name === 'resource') ||
                     (row.module_type_name === 'folder')) {
                 if (row.cm_id && row.module_id && row.module_name && row.module_type_name) {
-                    sql = mysql.format(
-                            'SELECT cm.id AS cm_id, ' +
-                            'c.id AS course_id, ' +
-                            'u.id AS u_userid, ' +
-                            'm.id AS module_id ' +
-                            'FROM mdl_course_modules cm ' +
-                            'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                            'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                            "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND mo.name = ? AND m.name = ? AND m.display <> ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["module_type_name"],
-                                row["module_name"],
-                                0
-                            ]
-                            );
+                    var sql = mysql.format(
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ? AND m.display <> ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"],
+                            0
+                        ]
+                    );
+
                     return sql;
                 } else {
                     return null;
                 }
             } else {
                 return (row.cm_id && row.module_id && row.module_name && row.module_type_name) ?
-                        mysql.format(
-                                'SELECT cm.id AS cm_id, ' +
-                                'c.id AS course_id, ' +
-                                'u.id AS u_userid, ' +
-                                'm.id AS module_id ' +
-                                'FROM mdl_course_modules cm ' +
-                                'LEFT JOIN mdl_course c ON c.id = cm.course ' +
-                                'JOIN mdl_modules mo ON mo.id = cm.module ' +
-                                "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
-                                'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                                'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
-                                [
-                                    row["u_email"],
-                                    row["u_username"],
-                                    row["course_shortname"],
-                                    row["module_type_name"],
-                                    row["module_name"]
-                                ]
-                                )
-                        :
-                        null;
+                    mysql.format(
+                        'SELECT cm.id AS cm_id, ' +
+                        'c.id AS course_id, ' +
+                        'u.id AS u_userid, ' +
+                        'm.id AS module_id ' +
+                        'FROM mdl_course_modules cm ' +
+                        'LEFT JOIN mdl_course c ON c.id = cm.course ' +
+                        'JOIN mdl_modules mo ON mo.id = cm.module ' +
+                        "JOIN mdl_" + row.module_type_name + " m ON m.id = cm.instance " +
+                        'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                        'WHERE c.shortname = ? AND mo.name = ? AND m.name = ?',
+                        [
+                            row["u_email"],
+                            row["u_username"],
+                            row["course_shortname"],
+                            row["module_type_name"],
+                            row["module_name"]
+                        ]
+                    )
+                    :
+                    null;
             }
         },
 
@@ -1524,20 +1588,20 @@ var library = {
             var updated_info = old_row.info.replace(/\[\d]+/, match_row.module_id);
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1566,38 +1630,38 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                'u_grade.id AS u_grade_id, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                'JOIN mdl_user u_grade ON log.info = u_grade.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'user report' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'c.id AS course_id, c.shortname AS course_shortname, ' +
+            'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
+            'u_grade.id AS u_grade_id, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_course c ON log.course = c.id ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            'JOIN mdl_user u_grade ON log.info = u_grade.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'user report' " +
+            "AND " + restrict_clause,
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT c.id AS course_id, ' +
-                            'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                            'u_grade.id AS u_grade_id, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'JOIN mdl_user u_grade ON (BINARY u_grade.email = ? OR u_grade.username = ?) ' +
-                            'WHERE c.shortname = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["u_grade_email"],
-                                row["u_grade_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT c.id AS course_id, ' +
+                    'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
+                    'u_grade.id AS u_grade_id, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'JOIN mdl_user u_grade ON (BINARY u_grade.email = ? OR u_grade.username = ?) ' +
+                    'WHERE c.shortname = ?',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["u_grade_email"],
+                        row["u_grade_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1620,20 +1684,20 @@ var library = {
             var updated_info = match_row.grade_userid;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1662,13 +1726,13 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'view' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'view' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+/); // Get course id.
@@ -1677,31 +1741,31 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
-                    'FROM mdl_course c ' +
-                    'WHERE c.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT c.id AS course_id, c.shortname AS course_shortname ' +
+                'FROM mdl_course c ' +
+                'WHERE c.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, c.shortname AS course_shortname ' +
-                            'FROM mdl_course c ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? ',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, c.shortname AS course_shortname ' +
+                    'FROM mdl_course c ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? ',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1720,20 +1784,20 @@ var library = {
             var updated_info = match_row.course;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     },
@@ -1762,15 +1826,15 @@ var library = {
          +----------+
          */
         sql_old:
-                'SELECT log.*, ' +
-                'c.id AS course_id, c.shortname AS course_shortname, ' +
-                'u.id, u.username AS u_username, u.email AS u_email ' +
-                'FROM mdl_log log ' +
-                'JOIN mdl_course c ON log.course = c.id ' +
-                'JOIN mdl_user u ON log.userid = u.id ' +
-                "WHERE log.module = 'course' " +
-                "AND log.action = 'view section' " +
-                "AND " + restrict_clause,
+            'SELECT log.*, ' +
+            'c.id AS course_id, c.shortname AS course_shortname, ' +
+            'u.id, u.username AS u_username, u.email AS u_email ' +
+            'FROM mdl_log log ' +
+            'JOIN mdl_course c ON log.course = c.id ' +
+            'JOIN mdl_user u ON log.userid = u.id ' +
+            "WHERE log.module = 'course' " +
+            "AND log.action = 'view section' " +
+            "AND " + restrict_clause,
 
         sql_old_2pass: (row) => {
             let url_id = row.url.match(/\d+$/); // Get section id.
@@ -1780,34 +1844,34 @@ var library = {
             }
 
             return mysql.format(
-                    'SELECT cs.id AS cs_id, cs.name AS cs_name ' +
-                    'FROM mdl_course_sections cs ' +
-                    'WHERE cs.id = ? ',
-                    [
-                        url_id[0]
-                    ]
-                    );
+                'SELECT cs.id AS cs_id, cs.name AS cs_name ' +
+                'FROM mdl_course_sections cs ' +
+                'WHERE cs.id = ? ',
+                [
+                    url_id[0]
+                ]
+            );
         },
 
         sql_match: (row) => {
             return (row.course_shortname) ?
-                    mysql.format(
-                            'SELECT u.id AS u_userid, ' +
-                            'c.id AS course_id, ' +
-                            'cs.id AS cs_id, cs.section AS cs_section ' +
-                            'FROM mdl_course_sections cs ' +
-                            'LEFT JOIN mdl_course c ON c.id = cs.course ' +
-                            'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
-                            'WHERE c.shortname = ? AND cs.name = ?',
-                            [
-                                row["u_email"],
-                                row["u_username"],
-                                row["course_shortname"],
-                                row["cs_name"]
-                            ]
-                            )
-                    :
-                    null;
+                mysql.format(
+                    'SELECT u.id AS u_userid, ' +
+                    'c.id AS course_id, ' +
+                    'cs.id AS cs_id, cs.section AS cs_section ' +
+                    'FROM mdl_course_sections cs ' +
+                    'LEFT JOIN mdl_course c ON c.id = cs.course ' +
+                    'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
+                    'WHERE c.shortname = ? AND cs.name = ?',
+                    [
+                        row["u_email"],
+                        row["u_username"],
+                        row["course_shortname"],
+                        row["cs_name"]
+                    ]
+                )
+                :
+                null;
         },
 
         fixer: function (log_row, old_matches, new_matches) {
@@ -1826,20 +1890,20 @@ var library = {
             var updated_info = match_row.csid;
 
             var output = 'INSERT INTO mdl_log ' +
-                    '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
-                    '(' +
-                    [
-                        old_row.time,
-                        match_row.userid,
-                        "' " + old_row.ip + "'",
-                        match_row.course,
-                        "' " + old_row.module + "'",
-                        "' " + old_row.cmid + "'",
-                        "' " + old_row.action + "'",
-                        "' " + updated_url + "'",
-                        "' " + updated_info + "'"
-                    ].join(',') +
-                    ')';
+                '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
+                '(' +
+                [
+                    old_row.time,
+                    match_row.userid,
+                    "' " + old_row.ip + "'",
+                    match_row.course,
+                    "' " + old_row.module + "'",
+                    "' " + old_row.cmid + "'",
+                    "' " + old_row.action + "'",
+                    "' " + updated_url + "'",
+                    "' " + updated_info + "'"
+                ].join(',') +
+                ')';
             next && next(null, output);
         }
     }
