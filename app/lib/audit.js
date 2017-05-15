@@ -106,6 +106,7 @@ function validate_record(r, k, ln){
     var passed = 0;
     var checks_passed = [];
     if (r){
+        var log_standard = k.indexOf('mdl_logstore_standard_log') != 1;
         var old_keys = Object.keys(r[0]);
         old_keys.splice(old_keys.indexOf('id'), 1);
         old_keys.splice(old_keys.indexOf('time'), 1);
@@ -156,7 +157,13 @@ function validate_record(r, k, ln){
                     if(old_value == match_value ) {                        
                         checks_passed.push(row);
                         passed++;
-                    } else {                        
+                    } else {                    
+                        if (row == 'eventname' || row == 'timecreated') {
+                            if(log_standard == true) {
+                                checks_passed.push(row);
+                                passed++;
+                            }
+                        }                        
                         if(typeof old_value == 'string' && old_value.indexOf('lang="es_es"') != -1) {
                             old_value = old_value.replace('lang="es_es"', 'lang="es"');
                         }

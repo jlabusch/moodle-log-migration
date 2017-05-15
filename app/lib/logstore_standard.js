@@ -37,13 +37,28 @@ function select_and_split_attr(table, x){
 // Columns that can uniquely identify a table during sql_match()
 function defining_attributes(table){
     switch(table){
+        case 'book_chapters':   return ['bookid:mdl_book.id', 'title'];
+        case 'chat_messages':   return ['chatid:mdl_chat.id', 'message', 'timestamp'];
+        case 'course': return ['shortname'];
+        case 'course_categories': return ['name'];
+        case 'course_completions':        return ['course:c.id', 'timeenrolled', 'userid:r.id'];
+        case 'course_modules': return ['course:c.id', 'added'];
+        case 'course_modules_completion': return ['timemodified', 'userid:u.id'];
+        case 'course_sections': return ['course:c.id', 'section'];
+        case 'feedback_completed': return ['feedback:mdl_feedback.id', 'userid:u.id'];
+        case 'groups': return ['timecreated', 'name', 'courseid:c.id'];
+        case 'groupings': return ['timecreated', 'name', 'courseid:c.id'];
+        case 'lti': return ['timecreated', 'name', 'course:c.id'];
+        case 'message_read': return ['timecreated', 'useridfrom:r.id', 'useridto:u.id'];
+        case 'message_contacts': return ['timecreated', 'userid:u.id', 'contactid:r.id'];
+        case 'user_enrolments': return ['timecreated', 'userid:r.id'];
         case 'user':                return ['email', 'username'];
         case 'quiz':                return ['name'];
         case 'quiz_attempts':       return ['userid:u.id', 'quiz:mdl_quiz.id'];
         case 'scorm_scoes':         return ['scorm:mdl_scorm.id', 'title', 'identifier'];
         case 'scorm':               return ['course:c.id', 'name', 'reference'];
         case 'assign':              return ['course:c.id', 'name'];
-        case 'assign_grades':       return ['userid:u.id', 'assignment:mdl_assign.id'];
+        case 'assign_grades':       return ['userid:r.id', 'grader:u.id', 'assignment:mdl_assign.id'];
         case 'assign_submission':   return ['userid:u.id', 'assignment:mdl_assign.id'];
         case 'folder':              return ['course:c.id', 'name'];
         case 'workshop':            return ['course:c.id', 'name'];
@@ -71,7 +86,10 @@ function defining_attributes(table){
 // mdl_course_modules.instance -> $table.id
 function linked_table(table){
     let link = null;
-    switch(table){
+    switch(table){        
+        case 'book_chapters':     link = 'book'; break;
+        case 'chat_messages':     link = 'chat'; break;
+        case 'feedback_completed':     link = 'feedback'; break;
         case 'scorm_scoes':         link = 'scorm'; break;
         case 'quiz_attempts':       link = 'quiz'; break;
         case 'quiz':                break;
@@ -232,11 +250,8 @@ module.exports = function(module, action){
                     FROM mdl_${row.objecttable}
                     LEFT JOIN mdl_course c ON c.shortname=?
                     LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                        AND u.id NOT IN (${invalid_users})
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                        AND (r.id IS NULL OR r.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                        AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_${row.__linked} ON
                         (${join_clause.join(` ${join_op} `)})
                     WHERE ${where_clause.join(` ${where_op} `)}
@@ -250,11 +265,8 @@ module.exports = function(module, action){
                             c.id AS course_id,c.shortname as course_shortname
                     FROM mdl_course c
                     LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                        AND u.id NOT IN (${invalid_users})
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                        AND (r.id IS NULL OR r.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                        AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
                     WHERE c.shortname=?
                 `;
                 where_subs.push(row.course_shortname);
