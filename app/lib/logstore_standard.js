@@ -63,8 +63,16 @@ function defining_attributes(table){
         case 'choice':              return ['course:c.id', 'name'];
         case 'mediagallery':        return ['course:c.id', 'name', 'userid:u.id'];
         case 'wiki':                return ['course:c.id', 'name'];
-        case 'workshop_submissions':return ['workshopid:mdl_workshop.id', 'title', 'authorid:u.id'];//relateduserid
+        case 'workshop_submissions':return ['workshopid:mdl_workshop.id', 'title', 'authorid:r.id'];//relateduserid
         case 'mediagallery_gallery':return ['instanceid:mdl_mediagallery.id','name'];
+        case 'imscp':               return ['course:c.id', 'name'];
+        case 'comments':            return ['userid:u.id', 'timecreated'];
+        case 'forum_posts':         return ['userid:u.id', 'subject', 'created'];
+        case 'mediagallery_item':   return ['userid:u.id', 'caption', 'timecreated'];
+        case 'wiki_pages':          return ['title', 'timecreated'];
+        case 'wiki_versions':       return ['content', 'timecreated'];
+        case 'cohort':              return ['idnumber', 'timecreated'];
+        case 'question':            return ['name','questiontext', 'timecreated'];
     }
     return [];
 }
@@ -126,7 +134,7 @@ module.exports = function(module, action){
             LEFT JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
-            WHERE component='${module}' AND action='${action}'
+            WHERE objecttable='${module}' AND action='${action}'
                 AND log.userid NOT IN (${invalid_users})
                 AND (log.relateduserid IS NULL OR log.relateduserid NOT IN (${invalid_users}))
                 AND (log.realuserid IS NULL OR log.realuserid NOT IN (${invalid_users}))
