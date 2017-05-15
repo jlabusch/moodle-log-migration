@@ -23,15 +23,29 @@ exports.run = function(){
 }
 
 function start_migration(){
-    dbs.old.query(
-        'select distinct module from mdl_log',
-        function(err, res){
-            if (err){
-                throw err;
-            }
-            res.forEach(r => process_module('mdl_log', r.module));
+    [
+        {t: 'mdl_log', col: 'module'},
+        {t: 'mdl_logstore_standard_log', col: 'component'}
+    ].forEach((spec) => {
+        if (is_allowed(process.env.RESTRICT_TABLES, spec.t)){
+            dbs.old.query(
+                migration_functions[spec.t].__module_sql,
+                function(err, res){
+                    if (err){
+                        throw err;
+                    }
+                    res.forEach((r,i) => {
+                        setTimeout(
+                            function(){
+                                process_module(spec.t, r[spec.col]);
+                            },
+                            i*1000
+                        );
+                    });
+                }
+            );
         }
-    );
+    });
 }
 
 function is_allowed(env, val){
@@ -43,14 +57,30 @@ function is_allowed(env, val){
     return ok;
 }
 
+function number_of_modules_in_progress(){
+    return Object.keys(stats).reduce((acc, val) => { return acc + (val.indexOf('in progress') > -1)|0 }, 0);
+}
+
 function process_module(t, m){
     let key = mk(t, m);
-    if (is_allowed(process.env.RESTRICT_MODULES, m) === false){
+    if (process.env.CONCURRENT_MODULES_MAX &&
+        number_of_modules_in_progress() > parseInt(process.env.CONCURRENT_MODULES_MAX))
+    {
+        console.log(`${key} waiting for other modules to complete...`);
+        setTimeout(
+            function(){
+                process_module(t, m);
+            },
+            5*1000
+        );
+        return;
+    }
+    if (is_allowed(process.env.RESTRICT_MODULES, key) === false){
         console.log(key + ' not listed in RESTRICT_MODULES, skipping...');
         return;
     }
     if (migration_functions[t] === undefined ||
-        migration_functions[t][m] === undefined)
+        migration_functions[t].__lookup(m) === undefined)
     {
         console.log('No supporting functions for ' + key);
         return;
@@ -58,7 +88,7 @@ function process_module(t, m){
     stats[key + ' (in progress...)'] = true;
     console.log('starting ' + key);
     dbs.old.query(
-        'select distinct action from ' + t + ' where module = ?',
+        migration_functions[t].__action_sql,
         [m],
         function(err, res){
             if (err){
@@ -83,20 +113,17 @@ function process_action(t, m, a, alist){
     a = a.action;
     let key = mk(t,m,a),
         next = () => { process_action(t, m, alist.shift(), alist) };
-    if (is_allowed(process.env.RESTRICT_ACTIONS, a) === false){
+    if (is_allowed(process.env.RESTRICT_ACTIONS, key) === false){
         console.log(key + ' not listed in RESTRICT_ACTIONS, skipping...');
         return next();
     }
-    if (migration_functions[t][m][a] === undefined){
+    let tool = migration_functions[t].__lookup(m, a);
+    if (!tool){
         console.log('No supporting functions for ' + key);
         return next();
     }
     stats[key + '.time'] = new Date();
     console.log('starting ' + key);
-    let tool = migration_functions[t][m][a];
-    if (tool.alias){
-        tool.alias();
-    }
     console.log('query ' + key + '\t' + tool.sql_old.replace(/\s+/g, ' '));
     dbs.old.query(
         tool.sql_old,
@@ -111,7 +138,24 @@ function process_action(t, m, a, alist){
 }
 
 var migration_functions = {
+    mdl_logstore_standard_log: {
+        __module_sql: 'select distinct component from mdl_logstore_standard_log',
+        __action_sql: 'select distinct action from mdl_logstore_standard_log where component = ?',
+        __lookup: require('./logstore_standard')
+    },
     mdl_log: {
+        __module_sql: 'select distinct module from mdl_log',
+        __action_sql: 'select distinct action from mdl_log where module = ?',
+        __lookup: (m, a) => {
+            if (a){
+                let x = migration_functions.mdl_log[m][a];
+                if (x && x.alias){
+                    x.alias();
+                }
+                return x;
+            }
+            return migration_functions.mdl_log[m];
+        },
         calendar:  undefined, //"Can't be migrated because mdl_event_subscriptions is empty",
         forum:  require('./forums.js'),
         login:  require('./login.js'),
@@ -162,7 +206,7 @@ function migrate_log_rows(t, m, a, row, rest, done){
         return;
     }
     inc_stat(key + '.count');
-    let tool = migration_functions[t][m][a],
+    let tool = migration_functions[t].__lookup(m, a),
         next = () => { migrate_log_rows(t, m, a, rest.shift(), rest, done) },
         verbose = tool.verbose,
         run_match = (r) => {
@@ -271,14 +315,9 @@ function migrate_log_rows(t, m, a, row, rest, done){
             );
         };
     if (tool.sql_old_2pass){
-        let sql = undefined; // getting SQL can fail if there's not enough data,
-                             // e.g. for scorm/view rows without a scoid in the URL.
-        try{
-            sql = tool.sql_old_2pass(row);
-        }catch(ex){
-            console.log('ERROR for ' + key + ' (2pass) - ' + ex.message);
-        }
+        let sql = tool.sql_old_2pass(row);
         if (!sql){
+            inc_stat(key + '.aborted_p2');
             run_match(row);
         }else{
             dbs.old.query(
