@@ -139,7 +139,7 @@ module.exports = function(module, action){
             LEFT JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
-            WHERE component='${module}' AND action='${action}'
+            WHERE objecttable='${module}' AND action='${action}'
                 AND log.userid NOT IN (${invalid_users})
                 AND (log.relateduserid IS NULL OR log.relateduserid NOT IN (${invalid_users}))
                 AND (log.realuserid IS NULL OR log.realuserid NOT IN (${invalid_users}))
