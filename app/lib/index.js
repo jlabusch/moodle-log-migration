@@ -25,7 +25,7 @@ exports.run = function(){
 function start_migration(){
     [
         {t: 'mdl_log', col: 'module'},
-        {t: 'mdl_logstore_standard_log', col: 'component'}
+        {t: 'mdl_logstore_standard_log', col: 'objecttable'}
     ].forEach((spec) => {
         if (is_allowed(process.env.RESTRICT_TABLES, spec.t)){
             dbs.old.query(
@@ -139,8 +139,8 @@ function process_action(t, m, a, alist){
 
 var migration_functions = {
     mdl_logstore_standard_log: {
-        __module_sql: 'select distinct component from mdl_logstore_standard_log',
-        __action_sql: 'select distinct action from mdl_logstore_standard_log where component = ?',
+        __module_sql: 'select distinct objecttable from mdl_logstore_standard_log',
+        __action_sql: 'select distinct action from mdl_logstore_standard_log where objecttable = ?',
         __lookup: require('./logstore_standard')
     },
     mdl_log: {

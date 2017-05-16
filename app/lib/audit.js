@@ -106,6 +106,7 @@ function validate_record(r, k, ln){
     var passed = 0;
     var checks_passed = [];
     if (r){
+        var log_standard = k.indexOf('mdl_logstore_standard_log') != 1;
         var old_keys = Object.keys(r[0]);
         old_keys.splice(old_keys.indexOf('id'), 1);
         old_keys.splice(old_keys.indexOf('time'), 1);
@@ -123,8 +124,8 @@ function validate_record(r, k, ln){
                 row.indexOf('name') != -1 ||
                 row.indexOf('created') != -1 ||
                 row.indexOf('title') != -1 ||
-                row.indexOf('subject') != -1 || 
-                row.indexOf('reference') != -1  
+                row.indexOf('subject') != -1 ||
+                row.indexOf('reference') != -1
             ) {
                 let old_value = r[0][row];
                 let match_value = r[1][row];
@@ -153,10 +154,16 @@ function validate_record(r, k, ln){
                         passed++;
                     }
                 } else {
-                    if(old_value == match_value ) {                        
+                    if(old_value == match_value ) {
                         checks_passed.push(row);
                         passed++;
-                    } else {                        
+                    } else {                    
+                        if (row == 'eventname' || row == 'timecreated') {
+                            if(log_standard == true) {
+                                checks_passed.push(row);
+                                passed++;
+                            }
+                        }                        
                         if(typeof old_value == 'string' && old_value.indexOf('lang="es_es"') != -1) {
                             old_value = old_value.replace('lang="es_es"', 'lang="es"');
                         }
@@ -166,13 +173,17 @@ function validate_record(r, k, ln){
                         if(typeof old_value == 'string') {
                             old_value = old_value.replace(/\r/g, "");
                         }
-                        if(old_value == match_value ) {                        
+                        if (row.indexOf('course_shortname') != -1 && old_value == null && match_value == 'MSF E-Campus') {
+                            checks_passed.push(row);
+                            passed++;
+                        }
+                        if(old_value == match_value ) {
                             checks_passed.push(row);
                             passed++;
                         }
                     }
                 }
-            }            
+            }
         });
         v = checks == passed;
         if(!v) {

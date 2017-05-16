@@ -37,13 +37,33 @@ function select_and_split_attr(table, x){
 // Columns that can uniquely identify a table during sql_match()
 function defining_attributes(table){
     switch(table){
+        case 'book_chapters':   return ['bookid:mdl_book.id', 'title'];
+        case 'blog_association':   return ['blogid:mdl_post.id'];
+        case 'block_admin_presets':   return ['name', 'timecreated', 'userid:u.id'];
+        case 'chat_messages':   return ['chatid:mdl_chat.id', 'message', 'timestamp'];
+        case 'course': return ['shortname'];
+        case 'course_categories': return ['name'];
+        case 'course_completions':        return ['course:c.id', 'timeenrolled', 'userid:r.id'];
+        case 'course_modules': return ['course:c.id', 'added'];
+        case 'course_modules_completion': return ['timemodified', 'userid:u.id'];
+        case 'course_sections': return ['course:c.id', 'section'];
+        case 'feedback_completed': return ['feedback:mdl_feedback.id', 'userid:u.id'];
+        case 'groups': return ['timecreated', 'name', 'courseid:c.id'];
+        case 'groupings': return ['timecreated', 'name', 'courseid:c.id'];
+        case 'lti': return ['timecreated', 'name', 'course:c.id'];
+        case 'message_read': return ['timecreated', 'useridfrom:r.id', 'useridto:u.id'];
+        case 'message_contacts': return ['userid:u.id', 'contactid:r.id'];
+        case 'post': return ['created', 'subject', 'userid:u.id', 'courseid:c.id'];
+        case 'tag': return ['name', 'userid:u.id'];
+        case 'tag_instance': return ['timecreated', 'tagid:mdl_tag.id'];
+        case 'user_enrolments': return ['timecreated', 'userid:r.id'];
         case 'user':                return ['email', 'username'];
         case 'quiz':                return ['name'];
         case 'quiz_attempts':       return ['userid:u.id', 'quiz:mdl_quiz.id'];
         case 'scorm_scoes':         return ['scorm:mdl_scorm.id', 'title', 'identifier'];
         case 'scorm':               return ['course:c.id', 'name', 'reference'];
         case 'assign':              return ['course:c.id', 'name'];
-        case 'assign_grades':       return ['userid:u.id', 'assignment:mdl_assign.id'];
+        case 'assign_grades':       return ['userid:r.id', 'grader:u.id', 'assignment:mdl_assign.id'];
         case 'assign_submission':   return ['userid:u.id', 'assignment:mdl_assign.id'];
         case 'folder':              return ['course:c.id', 'name'];
         case 'workshop':            return ['course:c.id', 'name'];
@@ -83,6 +103,9 @@ function defining_attributes(table){
 function linked_table(table){
     let link = null;
     switch(table){
+        case 'book_chapters':     link = 'book'; break;
+        case 'chat_messages':     link = 'chat'; break;
+        case 'feedback_completed':     link = 'feedback'; break;
         case 'scorm_scoes':         link = 'scorm'; break;
         case 'quiz_attempts':       link = 'quiz'; break;
         case 'quiz':                break;
@@ -100,6 +123,42 @@ function linked_table(table){
         return link;
     }
     return null;
+}
+
+function special_table(table){
+    let s = false;
+    switch(table){
+        case 'blog_association': s = true; break;
+        case 'block_admin_presets': s = true; break;
+        case 'cohort': s = true; break;
+        case 'message_read': s = true; break;
+        case 'message_contacts': s = true; break;
+        case 'tag': s = true; break;
+        case 'tag_instance': s = true; break;
+    }    
+    return s;
+}
+
+function special_linked_table(table){
+    let link = null;
+    switch(table){
+        case 'blog_association': link = 'post'; break;
+    }    
+    return link;
+}
+
+function special_join(table){
+    let table_fields = defining_attributes(table);
+    let sql = '';
+    table_fields.map((x, i) => {
+        let p = x.split(':');
+        if(p.length > 1) {
+            let m = p[1].split('.');
+            let alias = m[0];
+            sql += `LEFT JOIN ${m[0]} ${alias} ON ${alias}.${m[1]}=mdl_${table}.${p[0]} `;
+        }
+    });
+    return sql;
 }
 
 function no_object_table(row){
@@ -148,7 +207,7 @@ module.exports = function(module, action){
             LEFT JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
-            WHERE component='${module}' AND action='${action}'
+            WHERE objecttable='${module}' AND action='${action}'
                 AND log.userid NOT IN (${invalid_users})
                 AND (log.relateduserid IS NULL OR log.relateduserid NOT IN (${invalid_users}))
                 AND (log.realuserid IS NULL OR log.realuserid NOT IN (${invalid_users}))
@@ -177,9 +236,25 @@ module.exports = function(module, action){
                     WHERE mdl_${row.objecttable}.id=${row.objectid}
                 `.replace(/\s+/g, ' ');
             }else{
+                let join = '', special_fields = '';
+                let special_links = special_linked_table(row.objecttable);
+                if (special_table(row.objecttable) == true && special_links != null) {
+                    row.__linked = special_links;
+                    if(special_links instanceof Array) {
+                        special_links.map((tx, j) => {
+                            let tx_fields = format_attr_all(tx, defining_attributes(tx));
+                            special_fields = ','+ tx_fields;
+                        });
+                    } else {
+                        let lf = format_attr_all(special_links, defining_attributes(special_links));
+                        special_fields = ','+ lf;
+                    }
+                    join = special_join(row.objecttable);
+                }
                 sql = `
-                    SELECT  ${f}
+                    SELECT  ${f}${special_fields}
                     FROM mdl_${row.objecttable}
+                    ${join}
                     WHERE mdl_${row.objecttable}.id=${row.objectid}
                 `.replace(/\s+/g, ' ');
             }
@@ -259,11 +334,8 @@ module.exports = function(module, action){
                     FROM mdl_${row.objecttable}
                     LEFT JOIN mdl_course c ON c.shortname=?
                     LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                        AND u.id NOT IN (${invalid_users})
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                        AND (r.id IS NULL OR r.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                        AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_${row.__linked} ON
                         (${join_clause.join(` ${join_op} `)})
                     WHERE ${where_clause.join(` ${where_op} `)}
@@ -277,14 +349,15 @@ module.exports = function(module, action){
                             c.id AS course_id,c.shortname as course_shortname
                     FROM mdl_course c
                     LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                        AND u.id NOT IN (${invalid_users})
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                        AND (r.id IS NULL OR r.id NOT IN (${invalid_users}))
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                        AND (a.id IS NULL OR a.id NOT IN (${invalid_users}))
                     WHERE c.shortname=?
                 `;
-                where_subs.push(row.course_shortname);
+                if (special_table(row.objecttable) && row.course_shortname == null) {
+                    where_subs.push('MSF E-Campus');
+                } else {
+                    where_subs.push(row.course_shortname);
+                }
             }
             let result = mysql.format(sql.replace(/\s+/g, ' '), join_subs.concat(where_subs));
             return result;
