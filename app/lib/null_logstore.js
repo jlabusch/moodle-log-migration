@@ -68,12 +68,13 @@ var library = {
                         ${match_row.course_id},
                         ${match_row.rel_userid},
                         ${old_row.anonymous},
-                        '${old_row.other}',
+                        ?,
                         ${old_row.timecreated},
                         '${old_row.origin}',
                         '${old_row.ip}',
                         ${match_row.real_userid}
-                    )`.replace(/\s+/g, ' ');
+                    )`.replace(/\s+/g, ' ');                    
+            output = mysql.format(output, [old_row.other]);
             next && next(null, output);
         }
     },

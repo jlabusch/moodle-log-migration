@@ -13,7 +13,7 @@ var library = {
                     c.shortname AS course_shortname
             FROM mdl_logstore_standard_log log
             LEFT JOIN mdl_course c ON c.id=log.courseid
-            LEFT JOIN mdl_user u ON u.id=log.userid
+            JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
             WHERE log.objecttable='assignsubmission_file' AND log.action='created'
@@ -37,7 +37,7 @@ var library = {
                         c.id AS course_id,c.shortname as course_shortname,
                         af.id as object_id
                 FROM mdl_course c 
-                LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
+                JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
                 LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
                 LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}') ` +
                 'JOIN mdl_assign asi ON  asi.course = c.id AND asi.name = ? ' + 
@@ -81,12 +81,13 @@ var library = {
                         ${match_row.course_id},
                         ${match_row.rel_userid},
                         ${old_row.anonymous},
-                        '${old_row.other}',
+                        ?,
                         ${old_row.timecreated},
                         '${old_row.origin}',
                         '${old_row.ip}',
                         ${match_row.real_userid}
-                    )`.replace(/\s+/g, ' ');
+                    )`.replace(/\s+/g, ' ');            
+            output = mysql.format(output, [old_row.other]);
             next && next(null, output);
         }
     },
