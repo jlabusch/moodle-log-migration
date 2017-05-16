@@ -124,8 +124,8 @@ function validate_record(r, k, ln){
                 row.indexOf('name') != -1 ||
                 row.indexOf('created') != -1 ||
                 row.indexOf('title') != -1 ||
-                row.indexOf('subject') != -1 || 
-                row.indexOf('reference') != -1  
+                row.indexOf('subject') != -1 ||
+                row.indexOf('reference') != -1
             ) {
                 let old_value = r[0][row];
                 let match_value = r[1][row];
@@ -154,7 +154,7 @@ function validate_record(r, k, ln){
                         passed++;
                     }
                 } else {
-                    if(old_value == match_value ) {                        
+                    if(old_value == match_value ) {
                         checks_passed.push(row);
                         passed++;
                     } else {                    
@@ -173,13 +173,17 @@ function validate_record(r, k, ln){
                         if(typeof old_value == 'string') {
                             old_value = old_value.replace(/\r/g, "");
                         }
-                        if(old_value == match_value ) {                        
+                        if (row.indexOf('course_shortname') != -1 && old_value == null && match_value == 'MSF E-Campus') {
+                            checks_passed.push(row);
+                            passed++;
+                        }
+                        if(old_value == match_value ) {
                             checks_passed.push(row);
                             passed++;
                         }
                     }
                 }
-            }            
+            }
         });
         v = checks == passed;
         if(!v) {
