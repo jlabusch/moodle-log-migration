@@ -207,7 +207,7 @@ module.exports = function(module, action){
                     c.shortname AS course_shortname
             FROM mdl_logstore_standard_log log
             LEFT JOIN mdl_course c ON c.id=log.courseid
-            LEFT JOIN mdl_user u ON u.id=log.userid
+            JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
             WHERE objecttable='${module}' AND action='${action}'
@@ -336,7 +336,7 @@ module.exports = function(module, action){
                             ${fields.join(',')}
                     FROM mdl_${row.objecttable}
                     LEFT JOIN mdl_course c ON c.shortname=?
-                    LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
+                    JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
                     LEFT JOIN mdl_${row.__linked} ON
@@ -351,7 +351,7 @@ module.exports = function(module, action){
                             a.username AS real_username, a.email AS real_email, a.id as real_userid,
                             c.id AS course_id,c.shortname as course_shortname
                     FROM mdl_course c
-                    LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
+                    JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
                     LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
                     LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
                     WHERE c.shortname=?
@@ -396,12 +396,13 @@ module.exports = function(module, action){
                         ${match_row.course_id},
                         ${match_row.rel_userid},
                         ${old_row.anonymous},
-                        '${old_row.other}',
+                        ?,
                         ${old_row.timecreated},
                         '${old_row.origin}',
                         '${old_row.ip}',
                         ${match_row.real_userid}
                     )`.replace(/\s+/g, ' ');
+            output = mysql.format(output, [old_row.other]);
             next && next(null, output);
         }
     }
