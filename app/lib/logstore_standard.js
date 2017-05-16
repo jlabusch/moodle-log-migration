@@ -170,13 +170,16 @@ module.exports = function(module, action){
         return true;
     }
     let invalid_users = require('./invalid_users').join(',');
-    if (module == 'role' || module == 'assignsubmission_file') {
+    if (module == 'role' || module == 'assignsubmission_file' || module == null) {
         var logstore ;
         if (module == 'role'){
             logstore = require('./role_logstore');
         }
         if (module == 'assignsubmission_file'){
             logstore = require('./assignsubmission_file_logstore');
+        }
+        if (module == null){
+            logstore = require('./null_logstore');
         }
         let x =  logstore[action];
         if (x && x.alias){
