@@ -62,6 +62,17 @@ function defining_attributes(table){
         case 'bigbluebuttonbn':     return ['course:c.id', 'name'];
         case 'choice':              return ['course:c.id', 'name'];
         case 'mediagallery':        return ['course:c.id', 'name', 'userid:u.id'];
+        case 'wiki':                return ['course:c.id', 'name'];
+        case 'workshop_submissions':return ['workshopid:mdl_workshop.id', 'title', 'authorid:r.id'];//relateduserid
+        case 'mediagallery_gallery':return ['instanceid:mdl_mediagallery.id','name'];
+        case 'imscp':               return ['course:c.id', 'name'];
+        case 'comments':            return ['userid:u.id', 'timecreated'];
+        case 'forum_posts':         return ['userid:u.id', 'subject', 'created'];
+        case 'mediagallery_item':   return ['userid:u.id', 'caption', 'timecreated'];
+        case 'wiki_pages':          return ['title', 'timecreated'];
+        case 'wiki_versions':       return ['content', 'timecreated'];
+        case 'question':            return ['name','questiontext', 'timecreated'];
+        case 'certificate':         return ['name', 'timecreated'];
     }
     return [];
 }
@@ -82,6 +93,8 @@ function linked_table(table){
         case 'glossary_categories': link = 'glossary'; break;
         case 'assign_grades':       link = 'assign'; break;
         case 'assign_submission':   link = 'assign'; break;
+        case 'workshop_submissions':link = 'workshop'; break;
+        case 'mediagallery_gallery':link = 'mediagallery';break;
     }
     if (link && defining_attributes(link).length > 0){
         return link;
@@ -98,6 +111,20 @@ module.exports = function(module, action){
         return true;
     }
     let invalid_users = require('./invalid_users').join(',');
+    if (module == 'role' || module == 'assignsubmission_file') {
+        var logstore ;
+        if (module == 'role'){
+            logstore = require('./role_logstore');
+        }
+        if (module == 'assignsubmission_file'){
+            logstore = require('./assignsubmission_file_logstore');
+        }
+        let x =  logstore[action];
+        if (x && x.alias){
+            x.alias();
+        }
+        return x;
+    }
     return {
         // +---------+---------------------------+-----------+----------+--------+-------------+----------+------+----------+-----------+--------------+-------------------+--------+----------+---------------+-----------+------------------------------------------------+-------------+--------+---------------+------------+
         // | id      | eventname                 | component | action   | target | objecttable | objectid | crud | edulevel | contextid | contextlevel | contextinstanceid | userid | courseid | relateduserid | anonymous | other                                          | timecreated | origin | ip            | realuserid |
