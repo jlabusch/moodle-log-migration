@@ -326,7 +326,9 @@ module.exports = function(module, action){
                             where_subs.push(row[val]);
                         }
                     } else {
-                        join_clause.push(clause);
+                        if (clause != undefined) {
+                            join_clause.push(clause);
+                        }
                         if (have_sub){
                             join_subs.push(row[val]);
                         }
