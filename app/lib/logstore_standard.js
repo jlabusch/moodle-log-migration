@@ -9,12 +9,6 @@ function format_attr(table, fields){
     }).join(',');
 }
 
-function format_attr_any(table, fields){
-    if (fields.length < 1){
-        return '';
-    }
-    return format_attr(table, fields) + `, 'OR' AS __${table}_operator`;
-}
 
 function format_attr_all(table, fields){
     if (fields.length < 1){
@@ -47,19 +41,21 @@ function defining_attributes(table){
         case 'course_modules': return ['course:c.id', 'added'];
         case 'course_modules_completion': return ['timemodified', 'userid:u.id'];
         case 'course_sections': return ['course:c.id', 'section'];
+        case 'event': return ['name', 'timestart', 'courseid:c.id', 'userid:u.id'];
         case 'feedback_completed': return ['feedback:mdl_feedback.id', 'userid:u.id'];
         case 'groups': return ['timecreated', 'name', 'courseid:c.id'];
         case 'groupings': return ['timecreated', 'name', 'courseid:c.id'];
         case 'lti': return ['timecreated', 'name', 'course:c.id'];
         case 'message_read': return ['timecreated', 'useridfrom:r.id', 'useridto:u.id'];
         case 'message_contacts': return ['userid:u.id', 'contactid:r.id'];
+        case 'page': return ['name', 'course:c.id'];
         case 'post': return ['created', 'subject', 'userid:u.id', 'courseid:c.id'];
         case 'tag': return ['name', 'userid:u.id'];
         case 'tag_instance': return ['timecreated', 'tagid:mdl_tag.id'];
         case 'user_enrolments': return ['timecreated', 'userid:r.id'];
         case 'user':                return ['email', 'username'];
         case 'quiz':                return ['name'];
-        case 'quiz_attempts':       return ['userid:u.id', 'quiz:mdl_quiz.id'];
+        case 'quiz_attempts':       return ['userid:u.id', 'quiz:mdl_quiz.id', 'attempt', 'timestart'];
         case 'scorm_scoes':         return ['scorm:mdl_scorm.id', 'title', 'identifier'];
         case 'scorm':               return ['course:c.id', 'name', 'reference'];
         case 'assign':              return ['course:c.id', 'name'];
@@ -75,6 +71,7 @@ function defining_attributes(table){
         case 'glossary_categories': return ['glossaryid:mdl_glossary.id', 'name'];
         case 'forum':               return ['course:c.id', 'name','type'];
         case 'forum_discussions':   return ['course:c.id', 'forum:mdl_forum.id', 'name'];
+        case 'forum_subscriptions':   return ['forum:mdl_forum.id', 'userid:r.id'];
         case 'lesson':              return ['course:c.id', 'name'];
         case 'feedback':            return ['course:c.id', 'name'];
         case 'chat':                return ['course:c.id', 'name'];
@@ -92,6 +89,7 @@ function defining_attributes(table){
         case 'wiki_pages':          return ['title', 'timecreated'];
         case 'wiki_versions':       return ['content', 'timecreated'];
         case 'question':            return ['name','questiontext', 'timecreated'];
+        case 'question_categories': return ['name','stamp'];
         case 'certificate':         return ['name', 'timecreated'];
     }
     return [];
@@ -103,15 +101,13 @@ function defining_attributes(table){
 function linked_table(table){
     let link = null;
     switch(table){
-        case 'book_chapters':     link = 'book'; break;
-        case 'chat_messages':     link = 'chat'; break;
-        case 'feedback_completed':     link = 'feedback'; break;
+        case 'book_chapters':       link = 'book'; break;
+        case 'chat_messages':       link = 'chat'; break;
+        case 'feedback_completed':  link = 'feedback'; break;
         case 'scorm_scoes':         link = 'scorm'; break;
         case 'quiz_attempts':       link = 'quiz'; break;
-        case 'quiz':                break;
-        case 'page':                break;
-        case 'grade_grades':        break;
         case 'forum_discussions':   link = 'forum'; break;
+        case 'forum_subscriptions': link = 'forum'; break;
         case 'glossary_entries':    link = 'glossary'; break;
         case 'glossary_categories': link = 'glossary'; break;
         case 'assign_grades':       link = 'assign'; break;
@@ -150,12 +146,29 @@ function special_linked_table(table){
 function special_join(table){
     let table_fields = defining_attributes(table);
     let sql = '';
-    table_fields.map((x, i) => {
+    table_fields.map((x) => {
         let p = x.split(':');
         if(p.length > 1) {
             let m = p[1].split('.');
             let alias = m[0];
             sql += `LEFT JOIN ${m[0]} ${alias} ON ${alias}.${m[1]}=mdl_${table}.${p[0]} `;
+        }
+    });
+    return sql;
+}
+
+
+function make_join(table, alias){
+    let table_fields = defining_attributes(table);
+    let sql = '';
+    table_fields.map((x) => {
+        let p = x.split(':');
+        if(p.length > 1) {
+            let m = p[1].split('.');
+            let link = m[0];
+            if(link == alias) {
+                sql += ` AND ${link}.${m[1]} = mdl_${table}.${p[0]} `;
+            }
         }
     });
     return sql;
@@ -170,16 +183,28 @@ module.exports = function(module, action){
         return true;
     }
     let invalid_users = require('./invalid_users').join(',');
-    if (module == 'role' || module == 'assignsubmission_file' || module == null) {
+    if (
+        module === 'role' ||
+        module === 'assignsubmission_file' ||
+        module === null ||
+        module === 'grade_grades' ||
+        module === 'forum_discussion_subs'
+    ) {
         var logstore ;
-        if (module == 'role'){
+        if (module === 'role'){
             logstore = require('./role_logstore');
         }
-        if (module == 'assignsubmission_file'){
+        if (module === 'assignsubmission_file'){
             logstore = require('./assignsubmission_file_logstore');
         }
-        if (module == null){
+        if (module === null){
             logstore = require('./null_logstore');
+        }
+        if (module === 'grade_grades'){
+            logstore = require('./grade_grades_logstore');
+        }
+        if (module === 'forum_discussion_subs'){
+            logstore = require('./forum_discussion_subs_logstore');
         }
         let x =  logstore[action];
         if (x && x.alias){
@@ -243,8 +268,8 @@ module.exports = function(module, action){
                 let special_links = special_linked_table(row.objecttable);
                 if (special_table(row.objecttable) == true && special_links != null) {
                     row.__linked = special_links;
-                    if(special_links instanceof Array) {
-                        special_links.map((tx, j) => {
+                    if (Array.isArray(special_links) ) {
+                        special_links.map((tx) => {
                             let tx_fields = format_attr_all(tx, defining_attributes(tx));
                             special_fields = ','+ tx_fields;
                         });
@@ -267,96 +292,90 @@ module.exports = function(module, action){
         sql_match: (row) => {
             let join_subs = [],
                 where_subs = [],
-                sql = undefined;
-            if (row.__linked){
-                const default_join_op = 'AND'; // overridden by choice of format_attr_* earlier on
-                let fields = [],
-                    join_clause = [],
-                    join_op = default_join_op,
-                    where_clause = [],
-                    where_op = default_join_op;
-
-                Object.keys(row).forEach((x) => {
-                    let m = x.match(/__(.*)_field_(\d+)/);
-                    if (m){
-                        let val = `__${m[1]}_value_${m[2]}`;
-                        // Given row.__foo_field_0 = 'email', add field "mdl_foo.email AS __foo_value_0"
-                        // (Mainly for debugging)
-                        fields.push(`mdl_${m[1]}.${row[x]} AS ${val}`);
-
-                        let parts = select_and_split_attr(m[1], row[x]),
-                            clause = undefined,
-                            have_sub = false;
-                        if (parts.length === 1){
-                            // Given defining_attributes('foo') => ["email"],
-                            // you will have foo.__foo_field_0 = 'email' and row.__foo_value_0 = 'a@b.c',
-                            // so add join/where clause "mdl_foo.email = 'a@b.c'"
-                            clause = `mdl_${m[1]}.${row[x]} = ?`;
-                            have_sub = true;
-                        }else if (parts.length === 2){
-                            // Given defining_attributes('foo') => ["course:c.id"],
-                            // you're linking against a reference in the new table rather than a static value,
-                            // so add join/where clause "mdl_foo.course = c.id"
-                            clause = `mdl_${m[1]}.${row[x]} = ${parts[1]}`;
-                        }else{
-                            throw new Error(m[1] + '.' + row[x] + ' is and is not a defining attribute.');
-                        }
-                        if (m[1] === row.objecttable){
+                sql = undefined;                
+            const default_join_op = 'AND'; // overridden by choice of format_attr_* earlier on
+            let fields = [],
+                join_clause = [],
+                join_op = default_join_op,
+                where_clause = [],
+                where_op = default_join_op;
+            Object.keys(row).forEach((x) => {
+                let m = x.match(/__(.*)_field_(\d+)/);
+                if (m){
+                    let val = `__${m[1]}_value_${m[2]}`;
+                    // Given row.__foo_field_0 = 'email', add field "mdl_foo.email AS __foo_value_0"
+                    // (Mainly for debugging)
+                    fields.push(`mdl_${m[1]}.${row[x]} AS ${val}`);
+                    let parts = select_and_split_attr(m[1], row[x]),
+                        clause = undefined,
+                        have_sub = false;
+                    if (parts.length === 1){
+                        // Given defining_attributes('foo') => ["email"],
+                        // you will have foo.__foo_field_0 = 'email' and row.__foo_value_0 = 'a@b.c',
+                        // so add join/where clause "mdl_foo.email = 'a@b.c'"
+                        clause = `mdl_${m[1]}.${row[x]} = ?`;
+                        have_sub = true;
+                    } else if (parts.length > 2){
+                        throw new Error(m[1] + '.' + row[x] + ' is and is not a defining attribute.');
+                    }
+                    if (m[1] === row.objecttable){
+                        if (clause != undefined) {
                             where_clause.push(clause);
-                            if (have_sub){
-                                where_subs.push(row[val]);
-                            }
-                        }else{
-                            join_clause.push(clause);
-                            if (have_sub){
-                                join_subs.push(row[val]);
-                            }
                         }
-                        return;
-                    }
-                    m = x.match(/__(.*)_operator/);
-                    if (m){
-                        if (m[1] === row.objecttable){
-                            where_op = row[x];
-                        }else{
-                            join_op = row[x];
+                        if (have_sub){
+                            where_subs.push(row[val]);
                         }
-                        return;
+                    } else {
+                        join_clause.push(clause);
+                        if (have_sub){
+                            join_subs.push(row[val]);
+                        }
                     }
-                });
-
+                    return;
+                }
+                m = x.match(/__(.*)_operator/);
+                if (m){
+                    if (m[1] === row.objecttable){
+                        where_op = row[x];
+                    } else {
+                        join_op = row[x];
+                    }
+                    return;
+                }
+            });
+            let where_c = where_clause.join(' '+where_op+' ');
+            let pri_link = make_join(row.objecttable, 'u');
+            let rel_link = make_join(row.objecttable, 'r');
+            let real_link = make_join(row.objecttable, 'a');
+            let course_link = make_join(row.objecttable, 'c');
+            let sql_selects = `SELECT 
+                u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
+                r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
+                a.username AS real_username, a.email AS real_email, a.id as real_userid,
+                c.id AS course_id,c.shortname as course_shortname, 
+                mdl_${row.objecttable}.id AS object_id, ${fields.join(',')} `;
+            let sql_users = `
+                JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}') ${pri_link}
+                LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}') ${rel_link}
+                LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}') ${real_link} `;
+            if (row.__linked){
+                let linked_link = make_join(row.objecttable, 'mdl_'+row.__linked);
                 // TODO: get mdl_course_modules based on course+instance
                 // TODO: get mdl_context based on contextinstanceid
-                sql = `
-                    SELECT  u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
-                            r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
-                            a.username AS real_username, a.email AS real_email, a.id as real_userid,
-                            c.id AS course_id,c.shortname as course_shortname,
-                            mdl_${row.objecttable}.id AS object_id,
-                            ${fields.join(',')}
+                sql = `${sql_selects} 
                     FROM mdl_${row.objecttable}
-                    LEFT JOIN mdl_course c ON c.shortname=?
-                    JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                    LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                    LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                    LEFT JOIN mdl_${row.__linked} ON
-                        (${join_clause.join(` ${join_op} `)})
-                    WHERE ${where_clause.join(` ${where_op} `)}
-                `;
+                    LEFT JOIN mdl_course c ON c.shortname=? ${course_link} 
+                    ${sql_users}
+                    LEFT JOIN mdl_${row.__linked} ON (${join_clause.join(` ${join_op} `)} ${linked_link})
+                    WHERE ${where_c} `;
                 join_subs.unshift(row.course_shortname);
             }else{
-                sql = `
-                    SELECT  u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
-                            r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
-                            a.username AS real_username, a.email AS real_email, a.id as real_userid,
-                            c.id AS course_id,c.shortname as course_shortname
-                    FROM mdl_course c
-                    JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
-                    LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
-                    LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}')
-                    WHERE c.shortname=?
-                `;
-                if (special_table(row.objecttable) && row.course_shortname == null) {
+                sql = `${sql_selects} 
+                    FROM mdl_course c 
+                    ${sql_users}
+                    LEFT JOIN mdl_${row.objecttable} ON  ${where_c}
+                    WHERE c.shortname = ? `;
+                if ((special_table(row.objecttable) && row.course_shortname == null) || row.course_shortname == null) {
                     where_subs.push('MSF E-Campus');
                 } else {
                     where_subs.push(row.course_shortname);
