@@ -184,26 +184,26 @@ module.exports = function(module, action){
     }
     let invalid_users = require('./invalid_users').join(',');
     if (
-        module == 'role' ||
-        module == 'assignsubmission_file' ||
-        module == null ||
-        module == 'grade_grades' ||
-        module == 'forum_discussion_subs'
+        module === 'role' ||
+        module === 'assignsubmission_file' ||
+        module === null ||
+        module === 'grade_grades' ||
+        module === 'forum_discussion_subs'
     ) {
         var logstore ;
-        if (module == 'role'){
+        if (module === 'role'){
             logstore = require('./role_logstore');
         }
-        if (module == 'assignsubmission_file'){
+        if (module === 'assignsubmission_file'){
             logstore = require('./assignsubmission_file_logstore');
         }
-        if (module == null){
+        if (module === null){
             logstore = require('./null_logstore');
         }
-        if (module == 'grade_grades'){
+        if (module === 'grade_grades'){
             logstore = require('./grade_grades_logstore');
         }
-        if (module == 'forum_discussion_subs'){
+        if (module === 'forum_discussion_subs'){
             logstore = require('./forum_discussion_subs_logstore');
         }
         let x =  logstore[action];
@@ -268,7 +268,7 @@ module.exports = function(module, action){
                 let special_links = special_linked_table(row.objecttable);
                 if (special_table(row.objecttable) == true && special_links != null) {
                     row.__linked = special_links;
-                    if (special_links instanceof Array) {
+                    if (Array.isArray(special_links) ) {
                         special_links.map((tx) => {
                             let tx_fields = format_attr_all(tx, defining_attributes(tx));
                             special_fields = ','+ tx_fields;
@@ -315,20 +315,17 @@ module.exports = function(module, action){
                         // so add join/where clause "mdl_foo.email = 'a@b.c'"
                         clause = `mdl_${m[1]}.${row[x]} = ?`;
                         have_sub = true;
-                    }else if (parts.length === 2){
-                        // Given defining_attributes('foo') => ["course:c.id"],
-                        // you're linking against a reference in the new table rather than a static value,
-                        // so add join/where clause "mdl_foo.course = c.id"
-                        clause = `${parts[1]} = mdl_${m[1]}.${row[x]} `;
-                    }else{
+                    } else if (parts.length > 2){
                         throw new Error(m[1] + '.' + row[x] + ' is and is not a defining attribute.');
                     }
                     if (m[1] === row.objecttable){
-                        where_clause.push(clause);
+                        if (clause != undefined) {
+                            where_clause.push(clause);
+                        }
                         if (have_sub){
                             where_subs.push(row[val]);
                         }
-                    }else{
+                    } else {
                         join_clause.push(clause);
                         if (have_sub){
                             join_subs.push(row[val]);
@@ -340,7 +337,7 @@ module.exports = function(module, action){
                 if (m){
                     if (m[1] === row.objecttable){
                         where_op = row[x];
-                    }else{
+                    } else {
                         join_op = row[x];
                     }
                     return;
@@ -351,13 +348,6 @@ module.exports = function(module, action){
             let rel_link = make_join(row.objecttable, 'r');
             let real_link = make_join(row.objecttable, 'a');
             let course_link = make_join(row.objecttable, 'c');
-            where_c = where_c.replace(pri_link,'').replace(pri_link.replace(' AND ',''),'')
-                             .replace(rel_link,'').replace(rel_link.replace(' AND ',''),'')
-                             .replace(real_link,'').replace(real_link.replace(' AND ',''),'')
-                             .replace(course_link,'').replace(course_link.replace(' AND ',''),'');
-            if (where_c.substring(0, 5) == " AND ") {
-                where_c = where_c.slice(5);
-            }
             let sql_selects = `SELECT 
                 u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
                 r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
@@ -370,10 +360,6 @@ module.exports = function(module, action){
                 LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}') ${real_link} `;
             if (row.__linked){
                 let linked_link = make_join(row.objecttable, 'mdl_'+row.__linked);
-                where_c = where_c.replace(linked_link,'').replace(linked_link.replace(' AND ',''),'');
-                if (where_c.substring(0, 5) == " AND ") {
-                    where_c = where_c.slice(5);
-                }
                 // TODO: get mdl_course_modules based on course+instance
                 // TODO: get mdl_context based on contextinstanceid
                 sql = `${sql_selects} 

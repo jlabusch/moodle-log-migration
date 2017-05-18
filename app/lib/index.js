@@ -88,7 +88,7 @@ function process_module(t, m){
     stats[key + ' (in progress...)'] = true;
     console.log('starting ' + key);
     dbs.old.query(
-        migration_functions[t].__action_sql,
+        m === null ? migration_functions[t].__null_action_sql : migration_functions[t].__action_sql,
         [m],
         function(err, res){
             if (err){
@@ -141,6 +141,7 @@ var migration_functions = {
     mdl_logstore_standard_log: {
         __module_sql: 'select distinct objecttable from mdl_logstore_standard_log',
         __action_sql: 'select distinct action from mdl_logstore_standard_log where objecttable = ?',
+        __null_action_sql: 'select distinct action from mdl_logstore_standard_log where objecttable  is null',
         __lookup: require('./logstore_standard')
     },
     mdl_log: {
