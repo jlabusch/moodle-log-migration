@@ -1,7 +1,8 @@
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
-    mysql = require('mysql');
+    mysql = require('mysql'),
+    dbs = require('./dbs.js');
 
 var library = {
     "add": {
@@ -195,6 +196,8 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [old_row.info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -207,7 +210,7 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + old_row.url + "'",
-                                "'" + old_row.info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -266,6 +269,8 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [old_row.info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -278,7 +283,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + old_row.url + "'",
-                                "'" + old_row.info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -352,6 +357,8 @@ var library = {
             var updated_url = old_row.url
                                 .replace(/d=\d+/, 'd=' + match_row.did)
                                 .replace(/#p\d+/, '#p' + match_row.postid);
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [match_row.post_subject]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -364,7 +371,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + match_row.post_subject + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -575,6 +582,8 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/id=\d+/, 'id=' + match_row.course);
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [old_row.info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -587,7 +596,7 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + old_row.info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -969,6 +978,8 @@ var library = {
 
         fn: function(old_row, match_row, next){
             var updated_url = old_row.url.replace(/d=\d+/, 'd=' + match_row.did);
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [old_row.info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -981,7 +992,7 @@ var library = {
                                 match_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + old_row.info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);

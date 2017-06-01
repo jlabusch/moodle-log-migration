@@ -16,6 +16,10 @@ logger.prototype.append = function(row, match, result){
         this.records = [];
     }
     this.records.push([row, match, result]);
+    if (this.needs_header && this.records.length > 0){
+        file_sql.write(this.records[0][2].replace(/VALUES.*/, 'VALUES '));
+    }
+    file_sql.write(format_sql_record([row, match, result]));
 }
 
 logger.prototype.flush = function(i){
@@ -28,19 +32,17 @@ logger.prototype.flush = function(i){
         return;
     }
     var ok = true;
-    var sql_ok = true;
     i = i || 0;
     if (this.needs_header && this.records.length > 0){
         ok = file.write(
             this.key + '\n' +
             format_headings(this.records[0])
         );
-        sql_ok = file_sql.write(this.records[0][2].replace(/VALUES.*/, 'VALUES '));
         this.needs_header = false;
     }
-    while (ok && sql_ok && i < this.records.length){
+    while (ok  && i < this.records.length){
         ok = file.write(format_record(this.records[i]));
-        sql_ok = file_sql.write(format_sql_record(this.records[i]));
+        // sql_ok = file_sql.write(format_sql_record(this.records[i]));
         var valid = validate_record(this.records[i], this.key, i);        
         if(valid) {
             this.validated_records++;

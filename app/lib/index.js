@@ -39,7 +39,7 @@ function start_migration(){
                             function(){
                                 process_module(spec.t, r[spec.col]);
                             },
-                            i*1000
+                            i*100
                         );
                     });
                 }
@@ -71,7 +71,7 @@ function process_module(t, m){
             function(){
                 process_module(t, m);
             },
-            5*1000
+            5*100
         );
         return;
     }
