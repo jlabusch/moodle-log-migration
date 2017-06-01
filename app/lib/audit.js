@@ -25,7 +25,6 @@ logger.prototype.append = function(row, match, result){
         this.needs_header = false;
     }
     sql_ok = file_sql.write(format_sql_record([row, match, result]));
-    console.log(this.records.length);
 }
 
 logger.prototype.flush = function(i){
@@ -197,12 +196,12 @@ function validate_record(r, k, ln){
         });
         v = checks == passed;
         if(!v) {
-            // console.log('Failed validation: ' + k)
-            // console.log('Line: ' + ln)
-            // console.log('checks: ' + checks);
-            // console.log('passed: ' + passed);
-            // console.log('failed checks: ' + JSON.stringify(checks_available.filter(x => checks_passed.indexOf(x) < 0 )));
-            // console.log('row: ' + JSON.stringify(r) );
+            console.log('Failed validation: ' + k)
+            console.log('Line: ' + ln)
+            console.log('checks: ' + checks);
+            console.log('passed: ' + passed);
+            console.log('failed checks: ' + JSON.stringify(checks_available.filter(x => checks_passed.indexOf(x) < 0 )));
+            console.log('row: ' + JSON.stringify(r) );
         }
     }
     return v;
