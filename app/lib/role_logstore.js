@@ -1,7 +1,8 @@
 var invalid_users = require('./invalid_users').join(','),
     make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
-    mysql = require('mysql');
+    mysql = require('mysql'),
+    dbs = require('./dbs.js');
 
 var library = {
     "assigned": {
@@ -84,7 +85,7 @@ var library = {
                         '${old_row.ip}',
                         ${match_row.real_userid}
                     )`.replace(/\s+/g, ' ');            
-            output = mysql.format(output, [old_row.other]);
+            output = dbs.mysql_to_postgres(mysql.format(output, [old_row.other]));
             next && next(null, output);
         }
     },

@@ -1,7 +1,8 @@
 var invalid_users = require('./invalid_users').join(','),
     make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
-    mysql = require('mysql');
+    mysql = require('mysql'),
+    dbs = require('./dbs.js');
 
 var library = {
     "updated": {
@@ -13,7 +14,7 @@ var library = {
                     c.shortname AS course_shortname
             FROM mdl_logstore_standard_log log
             LEFT JOIN mdl_course c ON c.id=log.courseid
-            LEFT JOIN mdl_user u ON u.id=log.userid
+            JOIN mdl_user u ON u.id=log.userid
             LEFT JOIN mdl_user r ON r.id=log.relateduserid
             LEFT JOIN mdl_user a ON a.id=log.realuserid
             WHERE log.objecttable is null AND log.action='updated'
@@ -28,7 +29,7 @@ var library = {
                         a.username AS real_username, a.email AS real_email, a.id as real_userid,
                         c.id AS course_id,c.shortname as course_shortname
                 FROM mdl_course c 
-                LEFT JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
+                JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}')
                 LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}')
                 LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}') ` +
                 "WHERE c.shortname = ? ",
@@ -73,8 +74,8 @@ var library = {
                         '${old_row.origin}',
                         '${old_row.ip}',
                         ${match_row.real_userid}
-                    )`.replace(/\s+/g, ' ');                    
-            output = mysql.format(output, [old_row.other]);
+                    )`.replace(/\s+/g, ' ');
+            output = dbs.mysql_to_postgres(mysql.format(output, [old_row.other]));
             next && next(null, output);
         }
     },

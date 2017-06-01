@@ -111,7 +111,7 @@ var library = {
                         .replace(/course=\d+/, 'course=' + match_row.course);
                 }
             }
-
+            updated_url = updated_url.substring(0,100);
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +

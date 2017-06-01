@@ -772,7 +772,7 @@ var library = {
                                 "'" + old_row.ip + "'",
                                 match_row.course,
                                 "'" + old_row.module + "'",
-                                match_row.cmid,
+                                old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
                                 "'" + old_row.info + "'"

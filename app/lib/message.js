@@ -68,7 +68,7 @@ var library = {
                         '(' +
                             [
                                 old_row.time,
-                                match_row.userid,
+                                match_row.senderid,
                                 "'" + old_row.ip + "'",
                                 old_row.course,
                                 "'" + old_row.module + "'",
@@ -174,7 +174,7 @@ var library = {
                         '(' +
                             [
                                 old_row.time,
-                                match_row.userid,
+                                match_row.senderid,
                                 "'" + old_row.ip + "'",
                                 old_row.course,
                                 "'" + old_row.module + "'",

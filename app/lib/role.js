@@ -29,7 +29,8 @@ Roles have been heavily changed
 var restrict_clause = require('./sql_restrictions.js')(),
     make_alias = require('./common.js').make_alias,
     fix_by_match_index = require('./common.js').fix_by_match_index,
-    mysql = require('mysql');
+    mysql = require('mysql'),
+    dbs = require('./dbs.js');
 
 var library = {
     "assign": { 
@@ -59,7 +60,7 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.id AS role_id, r.shortname AS role_shortname, ' + 
+                '       r.id AS role_id, r.name AS role_name, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email, ' +
                 '       cx.id AS context_id ' +
                 'FROM mdl_course c ' +
@@ -91,7 +92,8 @@ var library = {
             } else {
                 updated_url = updated_url + "#role_id_not_migrated";
             }
-
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [updated_info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -104,7 +106,7 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + updated_info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -131,7 +133,7 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.id AS role_id, r.shortname AS role_shortname, ' + 
+                '       r.id AS role_id, r.name AS role_name, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -161,7 +163,8 @@ var library = {
             } else {
                 updated_url = updated_url + "#role_id_not_migrated";
             }
-
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [updated_info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -174,7 +177,7 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + updated_url + "'",
-                                "'" + updated_info + "'"
+                                info
                             ].join(',') +
                         ')';
             next && next(null, output);
@@ -204,7 +207,7 @@ var library = {
         sql_match:  (row) => {
             return mysql.format(
                 'SELECT c.id AS course, c.shortname AS course_shortname,' +
-                '       r.name AS role_name, r.shortname AS role_shortname, ' + 
+                '       r.id AS role_id, r.name AS role_name, r.shortname AS role_shortname, ' + 
                 '       u.id AS userid, u.username, u.email ' +
                 'FROM mdl_course c ' +
                 'JOIN mdl_user u ON (u.username = ? OR u.email = ?) ' +
@@ -226,6 +229,9 @@ var library = {
         },
 
         fn: function(old_row, match_row, next){
+            var updated_info = match_row.role_id == null ? old_row.info : match_row.role_name;
+            let info = `?`;
+            info = dbs.mysql_to_postgres(mysql.format(info, [updated_info]));
             var output ='INSERT INTO mdl_log ' +
                         '(time,userid,ip,course,module,cmid,action,url,info) VALUES ' +
                         '(' +
@@ -238,9 +244,10 @@ var library = {
                                 old_row.cmid,
                                 "'" + old_row.action + "'",
                                 "'" + old_row.url + "'",
-                                "'" + match_row.role_id == null ? old_row.info : match_row.role_name + "'"
+                                info
                             ].join(',') +
                         ')';
+
             next && next(null, output);
         }
     },

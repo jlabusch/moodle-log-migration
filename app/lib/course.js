@@ -360,13 +360,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -538,13 +538,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -707,13 +707,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -839,13 +839,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -939,13 +939,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1025,13 +1025,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1125,13 +1125,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1169,8 +1169,8 @@ var library = {
          */
         sql_old:
             'SELECT log.*, ' +
-            'u.id, u.username AS u_username, u.email AS u_email ' +
-            'c.id AS course_id, c.shortname AS course_shortname' +
+            'u.id, u.username AS u_username, u.email AS u_email, ' +
+            'c.id AS course_id, c.shortname AS course_shortname ' +
             'FROM mdl_log log ' +
             'JOIN mdl_user u ON log.userid = u.id ' +
             'JOIN mdl_course c ON log.course = c.id ' +
@@ -1233,13 +1233,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1333,13 +1333,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1433,13 +1433,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1593,13 +1593,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1645,9 +1645,9 @@ var library = {
         sql_match: (row) => {
             return (row.course_shortname) ?
                 mysql.format(
-                    'SELECT c.id AS course_id, ' +
-                    'u.id AS u_id, u.username AS u_username, u.email AS u_email, ' +
-                    'u_grade.id AS u_grade_id, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
+                    'SELECT c.id AS course, ' +
+                    'u.id AS userid, u.username AS u_username, u.email AS u_email, ' +
+                    'u_grade.id AS grade_userid, u_grade.username AS u_grade_username, u_grade.email AS u_grade_email ' +
                     'FROM mdl_course c ' +
                     'JOIN mdl_user u ON (BINARY u.email = ? OR u.username = ?) ' +
                     'JOIN mdl_user u_grade ON (BINARY u_grade.email = ? OR u_grade.username = ?) ' +
@@ -1672,10 +1672,6 @@ var library = {
         },
 
         fn: function (old_row, match_row, next) {
-            match_row.course = match_row.course_id || '';
-            match_row.userid = match_row.u_userid || '';
-            match_row.grade_userid = match_row.u_grade_userid || '';
-
             var mode = old_row.url.match(/\w+$/);
 
             var updated_url = 'user.php?id=' + match_row.userid +
@@ -1689,13 +1685,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1789,13 +1785,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);
@@ -1895,13 +1891,13 @@ var library = {
                 [
                     old_row.time,
                     match_row.userid,
-                    "' " + old_row.ip + "'",
+                    "'" + old_row.ip + "'",
                     match_row.course,
-                    "' " + old_row.module + "'",
-                    "' " + old_row.cmid + "'",
-                    "' " + old_row.action + "'",
-                    "' " + updated_url + "'",
-                    "' " + updated_info + "'"
+                    "'" + old_row.module + "'",
+                    "'" + old_row.cmid + "'",
+                    "'" + old_row.action + "'",
+                    "'" + updated_url + "'",
+                    "'" + updated_info + "'"
                 ].join(',') +
                 ')';
             next && next(null, output);

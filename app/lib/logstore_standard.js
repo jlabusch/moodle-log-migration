@@ -1,5 +1,7 @@
 var fix_by_match_index = require('./common.js').fix_by_match_index,
-    mysql = require('mysql');
+    mysql = require('mysql'),
+    dbs = require('./dbs.js');
+
 
 // ('foo', ['email']) => "'email' AS __foo_field_0, mdl_foo.email AS __foo_value_0"
 function format_attr(table, fields){
@@ -35,6 +37,7 @@ function defining_attributes(table){
         case 'blog_association':   return ['blogid:mdl_post.id'];
         case 'block_admin_presets':   return ['name', 'timecreated', 'userid:u.id'];
         case 'chat_messages':   return ['chatid:mdl_chat.id', 'message', 'timestamp'];
+        case 'cohort': return ['name', 'timecreated'];
         case 'course': return ['shortname'];
         case 'course_categories': return ['name'];
         case 'course_completions':        return ['course:c.id', 'timeenrolled', 'userid:r.id'];
@@ -355,10 +358,10 @@ module.exports = function(module, action){
                 r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
                 a.username AS real_username, a.email AS real_email, a.id as real_userid,
                 c.id AS course_id,c.shortname as course_shortname, 
-                mdl_${row.objecttable}.id AS object_id, ${fields.join(',')} `;
+                mdl_${row.objecttable}.id AS object_id ${fields.length >1 ? ', ' + fields.join(',') : ''} `;
             let sql_users = `
                 JOIN mdl_user u ON (u.email='${row.pri_email}' OR u.username='${row.pri_username}') ${pri_link}
-                LEFT JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}') ${rel_link}
+                ${rel_link == '' ? 'LEFT' : '' } JOIN mdl_user r ON (r.email='${row.rel_email}' OR r.username='${row.rel_username}') ${rel_link}
                 LEFT JOIN mdl_user a ON (a.email='${row.real_email}' OR a.username='${row.real_username}') ${real_link} `;
             if (row.__linked){
                 let linked_link = make_join(row.objecttable, 'mdl_'+row.__linked);
@@ -366,16 +369,18 @@ module.exports = function(module, action){
                 // TODO: get mdl_context based on contextinstanceid
                 sql = `${sql_selects} 
                     FROM mdl_${row.objecttable}
-                    LEFT JOIN mdl_course c ON c.shortname=? ${course_link} 
+                    LEFT JOIN mdl_course c ON c.shortname=?
                     ${sql_users}
-                    LEFT JOIN mdl_${row.__linked} ON (${join_clause.join(` ${join_op} `)} ${linked_link})
-                    WHERE ${where_c} `;
+                    ${linked_link == '' ? 'LEFT' : '' } JOIN mdl_${row.__linked} ON (${join_clause.join(` ${join_op} `)} ${linked_link}) `;
+                if(where_c != '') {
+                    sql  = sql + `WHERE ${where_c} `;
+                }
                 join_subs.unshift(row.course_shortname);
             }else{
                 sql = `${sql_selects} 
                     FROM mdl_course c 
+                    ${where_c == '' ? `, mdl_${row.objecttable} ` : `LEFT JOIN mdl_${row.objecttable}  ON ` + where_c}
                     ${sql_users}
-                    LEFT JOIN mdl_${row.objecttable} ON  ${where_c}
                     WHERE c.shortname = ? `;
                 if ((special_table(row.objecttable) && row.course_shortname == null) || row.course_shortname == null) {
                     where_subs.push('MSF E-Campus');
@@ -423,7 +428,7 @@ module.exports = function(module, action){
                         '${old_row.ip}',
                         ${match_row.real_userid}
                     )`.replace(/\s+/g, ' ');
-            output = mysql.format(output, [old_row.other]);
+            output = dbs.mysql_to_postgres(mysql.format(output, [old_row.other]));
             next && next(null, output);
         }
     }
