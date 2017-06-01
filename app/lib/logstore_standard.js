@@ -253,7 +253,9 @@ module.exports = function(module, action){
             let f = format_attr_all(row.objecttable, defining_attributes(row.objecttable)),
                 lf = format_attr_all(lt, defining_attributes(lt));
             if (!f){
+                /* eslint-disable no-console */
                 console.log('WARNING: No defining attributes for objecttable=' + row.objecttable);
+                /* eslint-enable no-console */
                 return null;
             }
             if (lt && lf){
@@ -352,8 +354,7 @@ module.exports = function(module, action){
             let pri_link = make_join(row.objecttable, 'u');
             let rel_link = make_join(row.objecttable, 'r');
             let real_link = make_join(row.objecttable, 'a');
-            let course_link = make_join(row.objecttable, 'c');
-            let sql_selects = `SELECT 
+            let sql_selects = `SELECT
                 u.username AS pri_username, u.email AS pri_email, u.id as pri_userid,
                 r.username AS rel_username, r.email AS rel_email, r.id as rel_userid,
                 a.username AS real_username, a.email AS real_email, a.id as real_userid,
